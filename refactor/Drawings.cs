@@ -1,0 +1,99 @@
+﻿using GameOverlay.Drawing;
+using GameOverlay.Windows;
+using System.Runtime.InteropServices;
+using SolidBrush = GameOverlay.Drawing.SolidBrush;
+
+namespace refactor
+{
+    internal class Drawings : IDisposable
+    {
+        [DllImport("user32.dll")]
+        static extern short GetAsyncKeyState(Keys vKey);
+
+        private readonly GraphicsWindow _graphicsWindow;
+        private SolidBrush _orbwalkerActivatedBrush = null!;
+        private SolidBrush _fontBrush = null!;
+        private SolidBrush _infoBrush = null!;
+        private SolidBrush _logoBrush = null!;
+        private GameOverlay.Drawing.Font _font = null!;
+        private GameOverlay.Drawing.Font _logoFont = null!;
+
+        public Drawings()
+        {
+            var gfx = new GameOverlay.Drawing.Graphics
+            {
+                MeasureFPS = true,
+                PerPrimitiveAntiAliasing = true,
+                TextAntiAliasing = true
+            };
+
+            _graphicsWindow = new GraphicsWindow(0, 0, Screen.PrimaryScreen!.Bounds.Width, Screen.PrimaryScreen.Bounds.Height, gfx)
+            {
+                FPS = 30, // Se puede aumentar ligeramente para mayor fluidez del overlay
+                IsTopmost = true,
+                IsVisible = true
+            };
+
+            _graphicsWindow.DrawGraphics += DrawGraphics;
+            _graphicsWindow.SetupGraphics += SetupGraphics;
+        }
+
+        private void SetupGraphics(object? sender, SetupGraphicsEventArgs e)
+        {
+            var gfx = e.Graphics;
+
+            _orbwalkerActivatedBrush = gfx.CreateSolidBrush(0, 255, 0, 100);
+            _infoBrush = gfx.CreateSolidBrush(255, 255, 255);
+            _fontBrush = gfx.CreateSolidBrush(0, 0, 0);
+            _logoBrush = gfx.CreateSolidBrush(255, 255, 0);
+
+            _logoFont = gfx.CreateFont("Monaco", 15, true);
+            _font = gfx.CreateFont("Arial", 12);
+        }
+
+        private void DrawGraphics(object? sender, DrawGraphicsEventArgs e)
+        {
+            var gfx = e.Graphics;
+            gfx.ClearScene();
+
+            if (SpecialFunctions.IsTargetProcessFocused("League of Legends") && Values.DrawingsEnabled)
+            {
+                // Usar la nueva clase GameState para obtener datos de forma centralizada
+                var state = GameState.Current;
+
+                gfx.DrawTextWithBackground(_logoFont, _fontBrush, _logoBrush, (_graphicsWindow.Width / 2f) - 62, 0, "MagicOrbwalker");
+
+                // Formatear los valores para una mejor visualización
+                gfx.DrawTextWithBackground(_font, _fontBrush, _infoBrush, 2, _graphicsWindow.Height - 16, $"ATK Speed: {state.AttackSpeed:F2}");
+                gfx.DrawTextWithBackground(_font, _fontBrush, _infoBrush, 2, _graphicsWindow.Height - 35, $"ATK Range: {state.AttackRange:F0}");
+                gfx.DrawTextWithBackground(_font, _fontBrush, _infoBrush, 2, _graphicsWindow.Height - 50, $"Windup %: {Values.Windup:F2}");
+
+                int windupMs = SpecialFunctions.GetAttackWindup(state.AttackSpeed);
+                gfx.DrawTextWithBackground(_font, _fontBrush, _infoBrush, 2, _graphicsWindow.Height - 65, $"Windup ms: {windupMs}");
+
+                // Lógica para mostrar el estado del Orbwalker
+                if ((GetAsyncKeyState(Keys.Space) & 0x8000) != 0)
+                {
+                    gfx.DrawTextWithBackground(_font, _fontBrush, _orbwalkerActivatedBrush, (_graphicsWindow.Width / 2f) - 50, _graphicsWindow.Height - 50, "Orbwalker: ON");
+                }
+            }
+        }
+
+        public void Run()
+        {
+            _graphicsWindow.Create();
+            _graphicsWindow.Join();
+        }
+
+        public void Dispose()
+        {
+            _graphicsWindow?.Dispose();
+            _orbwalkerActivatedBrush?.Dispose();
+            _fontBrush?.Dispose();
+            _infoBrush?.Dispose();
+            _logoBrush?.Dispose();
+            _font?.Dispose();
+            _logoFont?.Dispose();
+        }
+    }
+}
