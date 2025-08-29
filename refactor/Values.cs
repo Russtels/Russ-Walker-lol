@@ -24,12 +24,16 @@ namespace refactor
 
         private static readonly Dictionary<string, float> ChampionWindups = new Dictionary<string, float>
         {
-            {"Ashe", 21.93f}, {"Caitlyn", 17.708f}, {"Corki", 10.00f}, {"Draven", 15.614f},
-            {"Ezreal", 18.839f}, {"Jinx", 16.875f}, {"Kaisa", 16.108f}, {"Kalista", 36.000f},
-            {"Kayle", 19.355f}, {"Kindred", 17.544f}, {"Kogmaw", 16.622f}, {"Lucian", 15.00f},
-            {"MissFortune", 14.801f}, {"Quinn", 17.544f}, {"Samira", 15.00f}, {"Senna", 31.25f},
-            {"Sivir", 12.00f}, {"Tristana", 14.801f}, {"Twitch", 30.192f}, {"Varus", 17.544f},
-            {"Vayne", 17.544f}, {"Xayah", 17.687f}
+            {"Akshan", 13.33f}, {"Aphelios", 15.333f}, {"Ashe", 21.93f}, {"Caitlyn", 17.708f},
+            {"Corki", 27.00f}, {"Draven", 15.614f}, {"Ezreal", 18.839f}, {"Graves", 0.5f},
+            {"Jayce", 9.5f}, {"Jhin", 15.625f}, {"Jinx", 16.875f}, {"Kaisa", 16.108f},
+            {"Kalista", 36.00f}, {"Kayle", 19.355f}, {"Kindred", 17.544f}, {"Kogmaw", 16.622f},
+            {"Lucian", 15.00f}, {"MissFortune", 14.801f}, {"Quinn", 17.544f},
+            {"Samira", 15.00f}, {"Senna", 31.25f}, {"Sivir", 12.00f}, {"Smolder", 16.622f},
+            {"Tristana", 14.80f}, {"Twitch", 20.192f}, {"Varus", 17.544f}, {"Vayne", 17.544f},
+            {"Xayah", 17.687f}, {"Yunara", 16.255f}, {"Zeri", 15.625f}
+
+
         };
         private const float Other_wu = 15.0f;
 

@@ -23,13 +23,13 @@ namespace refactor
             // Factor de conversión de unidades de rango del juego a píxeles en la pantalla.
             // Puedes ajustar este valor si sientes que el rango aún no es perfecto.
             // Un valor más alto hará el círculo de búsqueda más grande.
-            const double pixelsPerUnit = 0.7;
+            const double pixelsPerUnit = 0.8;
 
             // Calcula el radio en píxeles basado en el rango del campeón
             int pixelRadius = (int)(attackRange * pixelsPerUnit);
 
             // Añade un pequeño búfer para asegurar que detecta enemigos en el borde
-            pixelRadius += 100;
+            pixelRadius += 50;
 
             // Obtiene el centro de la pantalla
             int centerX = Screen.PrimaryScreen!.Bounds.Width / 2;

@@ -9,7 +9,67 @@
     {
     class InputSimulator
     {
-                public static void SendMiddleMouseDown()
+
+        public static void SendRightMouseDown()
+        {
+            INPUT[] inputs = new INPUT[1];
+            inputs[0] = new INPUT
+            {
+                type = 0,
+                U = new InputUnion { mi = new MOUSEINPUT { dwFlags = MOUSEEVENTF.RIGHTDOWN } }
+            };
+            SendInput(1, inputs, INPUT.Size);
+        }
+
+        public static void SendRightMouseUp()
+        {
+            INPUT[] inputs = new INPUT[1];
+            inputs[0] = new INPUT
+            {
+                type = 0,
+                U = new InputUnion { mi = new MOUSEINPUT { dwFlags = MOUSEEVENTF.RIGHTUP } }
+            };
+            SendInput(1, inputs, INPUT.Size);
+        }
+        public static void SendLeftMouseDown()
+        {
+            INPUT[] inputs = new INPUT[1];
+            INPUT input = new INPUT
+            {
+                type = 0, // 0 = Mouse Input
+                U = new InputUnion
+                {
+                    mi = new MOUSEINPUT
+                    {
+                        dwFlags = MOUSEEVENTF.LEFTDOWN
+                    }
+                }
+            };
+
+            inputs[0] = input;
+            SendInput(1, inputs, INPUT.Size);
+        }
+
+        public static void SendLeftMouseUp()
+        {
+            INPUT[] inputs = new INPUT[1];
+            INPUT input = new INPUT
+            {
+                type = 0, // 0 = Mouse Input
+                U = new InputUnion
+                {
+                    mi = new MOUSEINPUT
+                    {
+                        dwFlags = MOUSEEVENTF.LEFTUP
+                    }
+                }
+            };
+
+            inputs[0] = input;
+            SendInput(1, inputs, INPUT.Size);
+        }
+
+        public static void SendMiddleMouseDown()
                 {
                     INPUT[] inputs = new INPUT[1];
                     INPUT input = new INPUT

@@ -1,4 +1,8 @@
 ﻿using System.Runtime.InteropServices;
+using System.Windows.Forms;
+using System.Threading;
+using System.Drawing;
+using System.Diagnostics;
 
 namespace refactor
 {
@@ -11,12 +15,9 @@ namespace refactor
         [DllImport("user32.dll")]
         private static extern short GetAsyncKeyState(Keys vKey);
 
-        // Instancia única para la API y el estado del juego
         private static readonly ApiClient _apiClient = new ApiClient();
         private static readonly GameState _gameState = new GameState();
         private static readonly Random _random = new Random();
-
-        // Variables de estado para las teclas
         private static bool _showAttackRangePressed = false;
         private static bool _attackChampionsOnlyPressed = false;
 
@@ -26,26 +27,22 @@ namespace refactor
             AllocConsole();
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-
-            // Iniciar hilos de UI (Consola y Overlay)
-            //new Thread(() => CNSL.LobbyShow()) { IsBackground = true }.Start();
             new Thread(() => new Drawings().Run()) { IsBackground = true }.Start();
 
-            // Bucle principal del Orbwalker
             while (true)
             {
                 if (SpecialFunctions.IsTargetProcessFocused("League of Legends"))
                 {
-                    // 1. Actualizar el estado del juego una vez por ciclo
                     await UpdateGameState();
-
-                    // 2. Ejecutar lógica solo si el jugador está vivo y la API responde
-                    if (_gameState.IsApiAvailable && !_gameState.IsDead)
+                    if (_gameState.IsApiAvailable)
                     {
                         HandleOrbwalkingLogic();
                     }
                 }
-                // Pausa muy corta para no consumir el 100% del CPU
+                else
+                {
+                    await Task.Delay(100);
+                }
                 await Task.Delay(1);
             }
         }
@@ -66,9 +63,9 @@ namespace refactor
             HandleKeyToggle(Values.ShowAttackRange, ref _showAttackRangePressed, InputSimulator.ScanCodeShort.KEY_C);
             HandleKeyToggle(Values.AttackChampionOnly, ref _attackChampionsOnlyPressed, middleMouse: true);
 
-            if (isSpacePressed && SpecialFunctions.AAtick < Environment.TickCount)
+            if (isSpacePressed)
             {
-                OrbwalkEnemyAsync().GetAwaiter().GetResult(); // Usar .Wait() o .GetAwaiter() si el contexto lo requiere
+                OrbwalkEnemyAsync().Wait();
             }
         }
 
@@ -88,51 +85,55 @@ namespace refactor
             }
         }
 
+        // =================================================================
+        // LÓGICA DE KकुमारO ORIGINAL RESTAURADA Y PERFECCIONADA
+        // =================================================================
         private static async Task OrbwalkEnemyAsync()
         {
-            // Solo se ejecuta si el ataque está listo
-            if (await SpecialFunctions.CanAttack(_gameState.AttackSpeed))
+            // FASE DE ATAQUE
+            if (SpecialFunctions.CanAttack(_gameState.AttackSpeed))
             {
                 Point enemyPosition = await ScreenCapture.GetEnemyPosition(_gameState.AttackRange);
 
-                // FASE DE ATAQUE Y KITEO
-                if (enemyPosition != Point.Empty)
+                if (enemyPosition != Point.Empty && !_gameState.IsDead)
                 {
-                    Point originalMousePosition = Cursor.Position;
+                    // 1. Guarda la posición del cursor para el kiteo.
+                    Point kitePosition = Cursor.Position;
 
-                    // 1. Atacar al enemigo
+                    // 2. Ejecuta el ATAQUE DIRECTO sobre el enemigo.
                     SpecialFunctions.ClickAt(enemyPosition);
 
-                    // 2. Establecer temporizadores
+                    // =================================================================
+                    // INICIO DE LA CORRECCIÓN CRÍTICA
+                    // Añadimos una pequeña pausa para darle tiempo al juego a procesar el clic
+                    // mientras el cursor AÚN está sobre el enemigo.
+                    // =================================================================
+                    await Task.Delay(25);
+                    // =================================================================
+                    // FIN DE LA CORRECCIÓN
+                    // =================================================================
+
+                    // 3. Restaura la posición del cursor a donde el usuario estaba apuntando.
+                    SpecialFunctions.SetCursorPos(kitePosition.X, kitePosition.Y);
+
+                    // 4. Establece los temporizadores para el siguiente ataque y para el movimiento.
                     int windupDelay = SpecialFunctions.GetAttackWindup(_gameState.AttackSpeed);
                     SpecialFunctions.AAtick = Environment.TickCount;
-                    SpecialFunctions.MoveCT = Environment.TickCount + windupDelay;
-
-                    // 3. Esperar el tiempo de windup
-                    await Task.Delay(windupDelay + Values.PingBufferMilliseconds);
-
-                    // 4. Volver a la posición original del cursor y hacer clic para moverse (Kiteo)
-                    SpecialFunctions.SetCursorPos(originalMousePosition.X, originalMousePosition.Y);
-                    SpecialFunctions.Click();
-
-                    // Pausa adicional opcional para campeones de baja velocidad de ataque
-                    if (_gameState.AttackSpeed < 1.75)
-                    {
-                        await Task.Delay(Values.SleepOnLowAS);
-                    }
+                    SpecialFunctions.MoveCT = Environment.TickCount + windupDelay + Values.PingBufferMilliseconds;
                 }
-                // Si no hay enemigos, atacar-moverse hacia el cursor
                 else
                 {
+                    // Si no hay enemigos, moverse hacia el cursor.
                     SpecialFunctions.Click();
-                    SpecialFunctions.AAtick = Environment.TickCount;
                 }
             }
-            // FASE DE MOVIMIENTO (mientras el ataque está en enfriamiento)
+            // FASE DE MOVIMIENTO (KITEO)
             else if (SpecialFunctions.CanMove())
             {
+                // Este clic se ejecuta después del windup, en la dirección que el usuario
+                // eligió (porque ya restauramos la posición del cursor).
                 SpecialFunctions.Click();
-                SpecialFunctions.MoveCT = Environment.TickCount + _random.Next(50, 80);
+                SpecialFunctions.MoveCT = Environment.TickCount + _random.Next(40, 60);
             }
         }
     }

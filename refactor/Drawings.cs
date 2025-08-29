@@ -42,7 +42,7 @@ namespace refactor
         {
             var gfx = e.Graphics;
 
-            _orbwalkerActivatedBrush = gfx.CreateSolidBrush(0, 255, 0, 100);
+            _orbwalkerActivatedBrush = gfx.CreateSolidBrush(0, 255, 255, 100);
             _infoBrush = gfx.CreateSolidBrush(255, 255, 255);
             _fontBrush = gfx.CreateSolidBrush(0, 0, 0);
             _logoBrush = gfx.CreateSolidBrush(255, 255, 0);
@@ -61,20 +61,18 @@ namespace refactor
                 // Usar la nueva clase GameState para obtener datos de forma centralizada
                 var state = GameState.Current;
 
-                gfx.DrawTextWithBackground(_logoFont, _fontBrush, _logoBrush, (_graphicsWindow.Width / 2f) - 62, 0, "MagicOrbwalker");
-
                 // Formatear los valores para una mejor visualización
-                gfx.DrawTextWithBackground(_font, _fontBrush, _infoBrush, 2, _graphicsWindow.Height - 16, $"ATK Speed: {state.AttackSpeed:F2}");
-                gfx.DrawTextWithBackground(_font, _fontBrush, _infoBrush, 2, _graphicsWindow.Height - 35, $"ATK Range: {state.AttackRange:F0}");
-                gfx.DrawTextWithBackground(_font, _fontBrush, _infoBrush, 2, _graphicsWindow.Height - 50, $"Windup %: {Values.Windup:F2}");
+                gfx.DrawTextWithBackground(_font, _fontBrush, _infoBrush, 570, _graphicsWindow.Height - 16, $"ATK Speed: {state.AttackSpeed:F2}");
+                gfx.DrawTextWithBackground(_font, _fontBrush, _infoBrush, 570, _graphicsWindow.Height - 35, $"ATK Range: {state.AttackRange:F0}");
+                gfx.DrawTextWithBackground(_font, _fontBrush, _infoBrush, 570, _graphicsWindow.Height - 50, $"Windup %: {Values.Windup:F2}");
 
                 int windupMs = SpecialFunctions.GetAttackWindup(state.AttackSpeed);
-                gfx.DrawTextWithBackground(_font, _fontBrush, _infoBrush, 2, _graphicsWindow.Height - 65, $"Windup ms: {windupMs}");
+                gfx.DrawTextWithBackground(_font, _fontBrush, _infoBrush, 570, _graphicsWindow.Height - 65, $"Windup ms: {windupMs}");
 
                 // Lógica para mostrar el estado del Orbwalker
                 if ((GetAsyncKeyState(Keys.Space) & 0x8000) != 0)
                 {
-                    gfx.DrawTextWithBackground(_font, _fontBrush, _orbwalkerActivatedBrush, (_graphicsWindow.Width / 2f) - 50, _graphicsWindow.Height - 50, "Orbwalker: ON");
+                    gfx.DrawTextWithBackground(_font, _fontBrush, _orbwalkerActivatedBrush, (_graphicsWindow.Width / 2f) - 70, _graphicsWindow.Height - 500, "Orbwalker: ON");
                 }
             }
         }

@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace refactor
 {
@@ -15,12 +16,6 @@ namespace refactor
         [DllImport("user32.dll")]
         public static extern bool SetCursorPos(int X, int Y);
 
-        [DllImport("user32.dll")]
-        private static extern void mouse_event(int dwFlags);
-
-        private const int MOUSEEVENTF_RIGHTDOWN = 0x08;
-        private const int MOUSEEVENTF_RIGHTUP = 0x10;
-
         public static int AAtick;
         public static int MoveCT;
 
@@ -33,23 +28,24 @@ namespace refactor
                 Process activeProcess = Process.GetProcessById(activeProcId);
                 return activeProcess.ProcessName.Equals(processName, StringComparison.OrdinalIgnoreCase);
             }
-            catch
-            {
-                return false;
-            }
+            catch { return false; }
         }
 
+        // =================================================================
+        // RESTAURADO: Ataque con Clic Derecho Directo para garantizar el objetivo
+        // =================================================================
         public static void ClickAt(Point location)
         {
             SetCursorPos(location.X, location.Y);
-            mouse_event(MOUSEEVENTF_RIGHTDOWN);
-            mouse_event(MOUSEEVENTF_RIGHTUP);
+            InputSimulator.SendRightMouseDown();
+            InputSimulator.SendRightMouseUp();
         }
 
+        // MÉTODO DE MOVIMIENTO: También es un Clic Derecho
         public static void Click()
         {
-            mouse_event(MOUSEEVENTF_RIGHTDOWN);
-            mouse_event(MOUSEEVENTF_RIGHTUP);
+            InputSimulator.SendRightMouseDown();
+            InputSimulator.SendRightMouseUp();
         }
 
         public static int GetAttackWindup(float attackSpeed)
@@ -64,7 +60,7 @@ namespace refactor
             return (int)(1000.0f / attackSpeed);
         }
 
-        public static async Task<bool> CanAttack(float attackSpeed)
+        public static bool CanAttack(float attackSpeed)
         {
             int attackDelay = GetAttackDelay(attackSpeed);
             return AAtick + attackDelay < Environment.TickCount;
@@ -72,11 +68,7 @@ namespace refactor
 
         public static bool CanMove()
         {
-            // La lógica de Kalista requiere que siempre pueda moverse después de un ataque.
-            if (GameState.Current.ChampionName == "Kalista")
-            {
-                return true;
-            }
+            if (GameState.Current.ChampionName == "Kalista") return true;
             return MoveCT <= Environment.TickCount;
         }
     }
