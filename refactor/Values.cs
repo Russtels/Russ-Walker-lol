@@ -10,6 +10,13 @@ namespace refactor
         public static bool DrawingsEnabled { get; set; } = true;
         public static int SleepOnLowAS { get; set; } = 100;
 
+        // Anti CC
+        public static bool ShowAntiCCAreaGuide { get; set; } = true; // Ponlo en 'true' para ver el rectángulo
+
+        // Añade estas dos líneas para el ajuste manual del centro
+        public static int CenterOffsetX { get; set; } = 0; // Valor positivo mueve el centro a la DERECHA, negativo a la IZQUIERDA
+        public static int CenterOffsetY { get; set; } = 0; // Valor positivo mueve el centro HACIA ABAJO, negativo HACIA ARRIBA
+
         // Propiedades de Windup
 
         // Buffer de latencia en ms (ping / LAG)

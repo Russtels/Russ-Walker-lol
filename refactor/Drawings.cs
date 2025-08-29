@@ -2,6 +2,7 @@
 using GameOverlay.Windows;
 using System.Runtime.InteropServices;
 using SolidBrush = GameOverlay.Drawing.SolidBrush;
+using System.Windows.Forms;
 
 namespace refactor
 {
@@ -17,6 +18,9 @@ namespace refactor
         private SolidBrush _logoBrush = null!;
         private GameOverlay.Drawing.Font _font = null!;
         private GameOverlay.Drawing.Font _logoFont = null!;
+
+        // Drawings del Anti CC
+        private SolidBrush _antiCCAreaBrush = null!;
 
         public Drawings()
         {
@@ -42,10 +46,14 @@ namespace refactor
         {
             var gfx = e.Graphics;
 
+
+            // Brushes
             _orbwalkerActivatedBrush = gfx.CreateSolidBrush(0, 255, 255, 100);
             _infoBrush = gfx.CreateSolidBrush(255, 255, 255);
             _fontBrush = gfx.CreateSolidBrush(0, 0, 0);
             _logoBrush = gfx.CreateSolidBrush(255, 255, 0);
+
+            _antiCCAreaBrush = gfx.CreateSolidBrush(255, 0, 0, 0); // Rojo con 80 de opacidad
 
             _logoFont = gfx.CreateFont("Monaco", 15, true);
             _font = gfx.CreateFont("Arial", 12);
@@ -60,6 +68,26 @@ namespace refactor
             {
                 // Usar la nueva clase GameState para obtener datos de forma centralizada
                 var state = GameState.Current;
+
+                //anti cc area
+                if (Values.ShowAntiCCAreaGuide)
+                {
+                    // Dimensiones que pediste
+                    float left = 900;
+                    float top = 990;
+                    float right = 1172; 
+                    float bottom = 1064; 
+
+                    var areaRect = new GameOverlay.Drawing.Rectangle(right, bottom, left, top);
+                    // Dibuja el relleno semitransparente
+                    gfx.FillRectangle(_antiCCAreaBrush, areaRect);
+
+                    // Dibuja un borde blanco para que sea más visible
+                    gfx.DrawRectangle(_infoBrush, areaRect, 2);
+
+                    // Añade un texto para identificar el área
+                    gfx.DrawTextWithBackground(_font, _fontBrush, _logoBrush, right + 5, bottom + 5, $"Área de Detección Anti-CC ({left}x{top})");
+                }
 
                 // Formatear los valores para una mejor visualización
                 gfx.DrawTextWithBackground(_font, _fontBrush, _infoBrush, 570, _graphicsWindow.Height - 16, $"ATK Speed: {state.AttackSpeed:F2}");
