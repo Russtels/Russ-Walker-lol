@@ -11,7 +11,11 @@ namespace refactor
         public static int SleepOnLowAS { get; set; } = 100;
 
         // Anti CC
+        public static bool AntiCC_DebugMode { get; set; } = true; // Habilita el modo de depuración para guardar capturas
+
         public static bool ShowAntiCCAreaGuide { get; set; } = true; // Ponlo en 'true' para ver el rectángulo
+                                                                     // Añade esta línea
+        public static float DetectionTolerance { get; set; } = 0.10f; // 85% de coincidencia por defecto. Baja este valor para ser MENOS estricto.
 
         // Añade estas dos líneas para el ajuste manual del centro
         public static int CenterOffsetX { get; set; } = 0; // Valor positivo mueve el centro a la DERECHA, negativo a la IZQUIERDA
@@ -22,6 +26,17 @@ namespace refactor
         // Buffer de latencia en ms (ping / LAG)
         public const int PingBufferMilliseconds = 65; // Búfer de 65ms para la latencia
         public static float Windup { get; private set; } = 15.0f; // Windup porcentual
+
+        // Constantes de píxeles para el Anti-CC
+        public static readonly Color StunCheckPix1 = Color.FromArgb(103, 27, 28);
+
+        public static readonly Color CleanseCheckPix1 = Color.FromArgb(60, 236, 187);
+        public static readonly Color CleanseCheckPix2 = Color.FromArgb(103, 27, 28);
+
+        public static readonly Color MercurialCheckPix1 = Color.FromArgb(173, 220, 3);
+        public static readonly Color MercurialCheckPix2 = Color.FromArgb(248, 248, 157);
+
+
 
         // Constantes de píxeles
         public static readonly Color EnemyPix = Color.FromArgb(52, 3, 0);

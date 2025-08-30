@@ -1,6 +1,8 @@
 ﻿using GameOverlay.Windows;
 using System.Runtime.InteropServices;
 using SolidBrush = GameOverlay.Drawing.SolidBrush;
+using System.Windows.Forms; // AÑADE ESTA LÍNEA
+
 
 namespace refactor
 {
@@ -14,6 +16,7 @@ namespace refactor
         private SolidBrush _fontBrush = null!;
         private SolidBrush _infoBrush = null!;
         private SolidBrush _logoBrush = null!;
+        private SolidBrush _antiCCAreaBrush = null!;
         private GameOverlay.Drawing.Font _font = null!;
         private GameOverlay.Drawing.Font _logoFont = null!;
 
@@ -47,7 +50,9 @@ namespace refactor
             _infoBrush = gfx.CreateSolidBrush(255, 255, 255);
             _fontBrush = gfx.CreateSolidBrush(0, 0, 0);
             _logoBrush = gfx.CreateSolidBrush(255, 255, 0);
-    
+            _antiCCAreaBrush = gfx.CreateSolidBrush(255, 255, 255);
+
+
             _logoFont = gfx.CreateFont("Monaco", 15, true);
             _font = gfx.CreateFont("Arial", 12);
         }
@@ -75,6 +80,39 @@ namespace refactor
                 {
                     gfx.DrawTextWithBackground(_font, _fontBrush, _orbwalkerActivatedBrush, (_graphicsWindow.Width / 2f) - 70, _graphicsWindow.Height - 500, "Orbwalker: ON");
                 }
+
+                // =================================================================
+                // INICIO: ESTADOS DEL ANTI-CC
+                // =================================================================
+                var stunStatusText = $"Stun: {(state.IsStunned ? "SI" : "NO")}";
+                var cleanseStatusText = $"Cleanse: {(state.IsCleanseReady ? "LISTO" : "NO")}";
+                var mercurialStatusText = $"Mercurial: {(state.IsMercurialReady ? "LISTO" : "NO")}";
+
+                gfx.DrawTextWithBackground(_font, _fontBrush, state.IsStunned ? _antiCCAreaBrush : _infoBrush, 2, _graphicsWindow.Height - 85, stunStatusText);
+                gfx.DrawTextWithBackground(_font, _fontBrush, state.IsCleanseReady ? _orbwalkerActivatedBrush : _infoBrush, 2, _graphicsWindow.Height - 100, cleanseStatusText);
+                gfx.DrawTextWithBackground(_font, _fontBrush, state.IsMercurialReady ? _orbwalkerActivatedBrush : _infoBrush, 2, _graphicsWindow.Height - 115, mercurialStatusText);
+                // =================================================================
+                // FIN: ESTADOS DEL ANTI-CC
+                // =================================================================
+                ///DEBUG
+                foreach (var itemSlot in AntiCC.ItemSlots)
+                {
+                    // Convierte el Rectangle de System.Drawing al del overlay
+                    var rect = new GameOverlay.Drawing.Rectangle(
+                        itemSlot.Value.Left,
+                        itemSlot.Value.Top,
+                        itemSlot.Value.Right,
+                        itemSlot.Value.Bottom
+                    );
+
+                    // Dibuja un borde amarillo alrededor del área del slot
+                    gfx.DrawRectangle(_logoBrush, rect, 2); // Usamos el pincel amarillo (_logoBrush)
+
+                    // Dibuja el número del slot para identificarlo
+                    gfx.DrawText(_font, _logoBrush, rect.Left, rect.Top - 15, itemSlot.Key.ToString());
+                }
+
+
             }
         }
 

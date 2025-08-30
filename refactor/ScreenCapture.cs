@@ -2,47 +2,92 @@
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Linq;
+using System.Windows.Forms;
 
 namespace refactor
 {
     class ScreenCapture
     {
+        // =================================================================
+        // INICIO: NUEVO MÉTODO GENÉRICO Y REUTILIZABLE
+        // =================================================================
+        /// <summary>
+        /// Busca la primera aparición de un patrón de colores horizontal en un área de la pantalla.
+        /// </summary>
+        public static Point FindFirstPattern(Rectangle searchArea, Color[] pattern)
+        {
+            Point foundPoint = Point.Empty;
+            if (searchArea.Width <= 0 || searchArea.Height <= 0) return foundPoint;
+
+            try
+            {
+                using (Bitmap bmp = new Bitmap(searchArea.Width, searchArea.Height, PixelFormat.Format32bppRgb))
+                {
+                    using (Graphics g = Graphics.FromImage(bmp))
+                    {
+                        g.CopyFromScreen(searchArea.Location, Point.Empty, searchArea.Size, CopyPixelOperation.SourceCopy);
+                    }
+
+                    using (FastBitmap fastBmp = new FastBitmap(bmp))
+                    {
+                        int[] patternArgb = pattern.Select(c => c.ToArgb() & 0x00FFFFFF).ToArray();
+                        int patternLength = pattern.Length;
+
+                        Parallel.For(0, fastBmp.Length - patternLength, (i, loopState) =>
+                        {
+                            if (foundPoint != Point.Empty) loopState.Stop();
+
+                            if ((fastBmp.GetI(i) & 0x00FFFFFF) == patternArgb[0])
+                            {
+                                bool match = true;
+                                for (int j = 1; j < patternLength; j++)
+                                {
+                                    if ((fastBmp.GetI(i + j) & 0x00FFFFFF) != patternArgb[j])
+                                    {
+                                        match = false;
+                                        break;
+                                    }
+                                }
+
+                                if (match)
+                                {
+                                    int x = i % fastBmp.Width;
+                                    int y = i / fastBmp.Width;
+                                    foundPoint = new Point(searchArea.X + x, searchArea.Y + y);
+                                    loopState.Stop();
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+            catch (Exception ex) { Console.WriteLine($"Error en FindFirstPattern: {ex.Message}"); }
+
+            return foundPoint;
+        }
+        // =================================================================
+        // FIN: NUEVO MÉTODO GENÉRICO
+        // =================================================================
+
+
+        // --- El resto del código para la detección de enemigos no cambia ---
+
         public static async Task<Point> GetEnemyPosition(float attackRange)
         {
-            if (attackRange > 0)
-            {
-                Rectangle rect = CalculateRectangle(attackRange);
-                // La búsqueda ahora se realiza en un hilo separado para no bloquear.
-                return await Task.Run(() => FindClosestEnemy(rect));
-            }
-            return Point.Empty;
+            if (attackRange <= 0) return Point.Empty;
+            Rectangle rect = CalculateRectangle(attackRange);
+            return await Task.Run(() => FindClosestEnemy(rect));
         }
 
         private static Rectangle CalculateRectangle(double attackRange)
         {
-            // Factor de conversión de unidades de rango del juego a píxeles en la pantalla.
-            // Puedes ajustar este valor si sientes que el rango aún no es perfecto.
-            // Un valor más alto hará el círculo de búsqueda más grande.
             const double pixelsPerUnit = 0.8;
-
-            // Calcula el radio en píxeles basado en el rango del campeón
-            int pixelRadius = (int)(attackRange * pixelsPerUnit);
-
-            // Añade un pequeño búfer para asegurar que detecta enemigos en el borde
-            pixelRadius += 50;
-
-            // Obtiene el centro de la pantalla
+            int pixelRadius = (int)(attackRange * pixelsPerUnit) + 50;
             int centerX = Screen.PrimaryScreen!.Bounds.Width / 2;
             int centerY = Screen.PrimaryScreen!.Bounds.Height / 2;
-
-            // Crea un rectángulo (cuadrado) centrado en el jugador que representa el área de búsqueda
-            return new Rectangle(
-                centerX - pixelRadius,
-                centerY - pixelRadius,
-                pixelRadius * 2,
-                pixelRadius * 2
-            );
+            return new Rectangle(centerX - pixelRadius, centerY - pixelRadius, pixelRadius * 2, pixelRadius * 2);
         }
+
         private static Point FindClosestEnemy(Rectangle rect)
         {
             if (rect.IsEmpty) return Point.Empty;
@@ -53,15 +98,6 @@ namespace refactor
             if (points.Count > 0)
             {
                 Point closestEnemy = points.OrderBy(p => SquareDistance(playerPos, p)).First();
-
-                // =================================================================
-                // INICIO DE LÍNEA DE DEPURACIÓN
-                // =================================================================
-                Console.WriteLine($"[DEBUG] ¡Enemigo detectado en {closestEnemy.X}, {closestEnemy.Y} dentro del rectángulo de búsqueda: {rect}");
-                // =================================================================
-                // FIN DE LÍNEA DE DEPURACIÓN
-                // =================================================================
-
                 return closestEnemy;
             }
 
@@ -77,42 +113,33 @@ namespace refactor
 
         public static List<Point> PixelSearchEnemies(Rectangle rect, Color PixelColor, Color PixelColor1, Color PixelColorBS, Color PixelColorBS1)
         {
-            int offsetX = 65;
-            int offsetY = 95;
-
+            // ... esta función permanece sin cambios, ya que es específica para enemigos ...
+            int offsetX = 65, offsetY = 95;
             if (Screen.PrimaryScreen!.Bounds.Width != 1920 || Screen.PrimaryScreen!.Bounds.Height != 1080)
             {
                 double XRatio = (double)Screen.PrimaryScreen.Bounds.Width / 1920.0;
                 double YRatio = (double)Screen.PrimaryScreen.Bounds.Height / 1080.0;
-                rect.X = (int)(rect.X * XRatio);
-                rect.Y = (int)(rect.Y * YRatio);
-                rect.Width = (int)(rect.Width * XRatio);
-                rect.Height = (int)(rect.Height * YRatio);
-                offsetX = (int)(offsetX * XRatio);
-                offsetY = (int)(offsetY * YRatio);
+                rect.X = (int)(rect.X * XRatio); rect.Y = (int)(rect.Y * YRatio);
+                rect.Width = (int)(rect.Width * XRatio); rect.Height = (int)(rect.Height * YRatio);
+                offsetX = (int)(offsetX * XRatio); offsetY = (int)(offsetY * YRatio);
             }
-
             int searchvalueNormal = PixelColor.ToArgb();
             int searchvalueNormal1 = PixelColor1.ToArgb();
             int searchvalueBS = PixelColorBS.ToArgb();
             int searchvalueBS1 = PixelColorBS1.ToArgb();
-
             List<Point> Points = new List<Point>();
             object lockObj = new object();
-
             Bitmap BMP = new Bitmap(rect.Width, rect.Height, PixelFormat.Format32bppRgb);
             using (Graphics GFX = Graphics.FromImage(BMP))
             {
                 GFX.CopyFromScreen(rect.X, rect.Y, 0, 0, rect.Size, CopyPixelOperation.SourceCopy);
             }
-
             using (FastBitmap bitmap = new FastBitmap(BMP))
             {
                 Parallel.For(0, bitmap.Length - 1, i =>
                 {
                     int currentPixel = bitmap.GetI(i);
                     int nextPixel = bitmap.GetI(i + 1);
-
                     if ((currentPixel == searchvalueNormal && nextPixel == searchvalueNormal1) ||
                         (currentPixel == searchvalueBS && nextPixel == searchvalueBS1))
                     {
@@ -120,7 +147,6 @@ namespace refactor
                     }
                 });
             }
-
             return Points;
         }
 

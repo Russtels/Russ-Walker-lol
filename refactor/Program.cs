@@ -31,6 +31,9 @@ namespace refactor
             Application.SetCompatibleTextRenderingDefault(false);
             new Thread(() => new Drawings().Run()) { IsBackground = true }.Start();
 
+            new Thread(() => AntiCCLoop()) { IsBackground = true }.Start();
+
+
             while (true)
             {
                 if (SpecialFunctions.IsTargetProcessFocused("League of Legends"))
@@ -87,9 +90,6 @@ namespace refactor
             }
         }
 
-        // =================================================================
-        // LÓGICA DE KकुमारO ORIGINAL RESTAURADA Y PERFECCIONADA
-        // =================================================================
         private static async Task OrbwalkEnemyAsync()
         {
             // FASE DE ATAQUE
@@ -138,5 +138,21 @@ namespace refactor
                 SpecialFunctions.MoveCT = Environment.TickCount + _random.Next(40, 60);
             }
         }
+
+        private static void AntiCCLoop()
+        {
+            while (true)
+            {
+                // Solo ejecuta la lógica si el juego está en primer plano y la API está activa
+                if (SpecialFunctions.IsTargetProcessFocused("League of Legends") && _gameState.IsApiAvailable)
+                {
+                    AntiCC.Update(_gameState);
+                }
+
+                // Pausa de 100ms. Es suficiente para reaccionar a tiempo a un stun sin consumir CPU de más.
+                Thread.Sleep(25);
+            }
+        }
+
     }
 }
