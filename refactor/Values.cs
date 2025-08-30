@@ -37,7 +37,6 @@ namespace refactor
         public static readonly Color MercurialCheckPix2 = Color.FromArgb(248, 248, 157);
 
 
-
         // Constantes de píxeles
         public static readonly Color EnemyPix = Color.FromArgb(52, 3, 0);
         public static readonly Color EnemyPix1 = Color.FromArgb(53, 3, 0);

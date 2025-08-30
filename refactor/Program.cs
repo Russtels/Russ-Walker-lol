@@ -40,9 +40,22 @@ namespace refactor
                     await UpdateGameState();
                     if (_gameState.IsApiAvailable)
                     {
-                        // Ejecuta la detección de stun y el orbwalker en el bucle rápido
-                        AntiCC.CheckForStunAndReact(_gameState);
-                        HandleOrbwalkingLogic();
+                        // =================================================================
+                        // INICIO: LÓGICA DE PRIORIDAD
+                        // =================================================================
+
+                        // 1. Revisa el Anti-CC primero.
+                        bool actionTakenByAntiCC = AntiCC.CheckForStunAndReact(_gameState);
+
+                        // 2. Si el Anti-CC NO tomó ninguna acción, entonces ejecuta el orbwalker.
+                        if (!actionTakenByAntiCC)
+                        {
+                            HandleOrbwalkingLogic();
+                        }
+
+                        // =================================================================
+                        // FIN: LÓGICA DE PRIORIDAD
+                        // =================================================================
                     }
                 }
                 else

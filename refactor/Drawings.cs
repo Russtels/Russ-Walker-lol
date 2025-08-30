@@ -88,9 +88,9 @@ namespace refactor
                 var cleanseStatusText = $"Cleanse: {(state.IsCleanseReady ? "LISTO" : "NO")}";
                 var mercurialStatusText = $"Mercurial: {(state.IsMercurialReady ? "LISTO" : "NO")}";
 
-                gfx.DrawTextWithBackground(_font, _fontBrush, state.IsStunned ? _antiCCAreaBrush : _infoBrush, 2, _graphicsWindow.Height - 85, stunStatusText);
-                gfx.DrawTextWithBackground(_font, _fontBrush, state.IsCleanseReady ? _orbwalkerActivatedBrush : _infoBrush, 2, _graphicsWindow.Height - 100, cleanseStatusText);
-                gfx.DrawTextWithBackground(_font, _fontBrush, state.IsMercurialReady ? _orbwalkerActivatedBrush : _infoBrush, 2, _graphicsWindow.Height - 115, mercurialStatusText);
+                gfx.DrawTextWithBackground(_font, _fontBrush, state.IsStunned ? _antiCCAreaBrush : _infoBrush, 530, _graphicsWindow.Height - 85, stunStatusText);
+                gfx.DrawTextWithBackground(_font, _fontBrush, state.IsCleanseReady ? _orbwalkerActivatedBrush : _infoBrush, 530, _graphicsWindow.Height - 100, cleanseStatusText);
+                gfx.DrawTextWithBackground(_font, _fontBrush, state.IsMercurialReady ? _orbwalkerActivatedBrush : _infoBrush, 530, _graphicsWindow.Height - 115, mercurialStatusText);
                 // =================================================================
                 // FIN: ESTADOS DEL ANTI-CC
                 // =================================================================
@@ -105,10 +105,10 @@ namespace refactor
                         itemSlot.Value.Bottom
                     );
 
-                    // Dibuja un borde amarillo alrededor del área del slot
-                    gfx.DrawRectangle(_logoBrush, rect, 2); // Usamos el pincel amarillo (_logoBrush)
+                    // Dibuja un borde de color para que sea visible (usaremos el pincel amarillo)
+                    gfx.DrawRectangle(_logoBrush, rect, 2);
 
-                    // Dibuja el número del slot para identificarlo
+                    // Dibuja el número del slot para poder identificarlo
                     gfx.DrawText(_font, _logoBrush, rect.Left, rect.Top - 15, itemSlot.Key.ToString());
                 }
 

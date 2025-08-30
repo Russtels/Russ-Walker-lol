@@ -10,14 +10,10 @@ namespace refactor
         private static readonly Rectangle StunArea = new Rectangle(1169, 1023, 30, 23);
         private static readonly Rectangle Summoner1Area = new Rectangle(984, 991, 36, 34);
         private static readonly Rectangle Summoner2Area = new Rectangle(1021, 991, 36, 34);
-        internal static readonly Dictionary<int, Rectangle> ItemSlots = new Dictionary<int, Rectangle>
+            internal static readonly Dictionary<int, Rectangle> ItemSlots = new Dictionary<int, Rectangle>
         {
             { 1, new Rectangle(1070, 990, 30, 30) },
             { 2, new Rectangle(1100, 990, 30, 30) },
-            { 3, new Rectangle(1134, 990, 30, 30) }, // <-- COORDENADA CORREGIDA
-            { 5, new Rectangle(1070, 1021, 30, 30) },
-            { 6, new Rectangle(1100, 1021, 30, 30) },
-            { 7, new Rectangle(1135, 1021, 30, 30) }
         };
 
         // === PATRONES DE PÍXELES ===
@@ -53,23 +49,20 @@ namespace refactor
         }
 
         // BUCLE RÁPIDO: Se ejecuta en el hilo principal para una reacción instantánea
-        public static void CheckForStunAndReact(GameState gameState)
+        public static bool CheckForStunAndReact(GameState gameState)
         {
             bool isCurrentlyStunned = PixelSearch(StunArea, StunPattern);
             gameState.IsStunned = isCurrentlyStunned;
             GameState.Current.IsStunned = isCurrentlyStunned;
 
-            // La condición clave: reacciona solo en el fotograma exacto en que el estado cambia de NO stun a SÍ stun
+            // La condición clave: reacciona solo en el fotograma exacto en que el estado cambia
             if (isCurrentlyStunned && !wasStunnedLastTick)
             {
                 bool canAct = Environment.TickCount > _lastActionTimestamp + ActionCooldownMs;
                 if (canAct)
                 {
-                    // Usa la información de disponibilidad que el otro hilo ya preparó
                     if (gameState.IsMercurialReady)
                     {
-                        // La ranura del objeto no está disponible en este hilo rápido, así que necesitamos encontrarla de nuevo
-                        // Esto es un pequeño coste aceptable por la reacción instantánea.
                         foreach (var slot in ItemSlots)
                         {
                             if (PixelSearch(slot.Value, MercurialPattern))
@@ -77,7 +70,8 @@ namespace refactor
                                 Console.WriteLine($"[ANTI-CC] REACCIÓN INSTANTÁNEA. USANDO CIMITARRA (Slot {slot.Key})...");
                                 InputSimulator.PressItemKey(slot.Key);
                                 _lastActionTimestamp = Environment.TickCount;
-                                break;
+                                wasStunnedLastTick = isCurrentlyStunned;
+                                return true; // <<< DEVUELVE TRUE: Se ha tomado una acción
                             }
                         }
                     }
@@ -87,11 +81,14 @@ namespace refactor
                         InputSimulator.SendKeyDown(InputSimulator.ScanCodeShort.KEY_D);
                         InputSimulator.SendKeyUp(InputSimulator.ScanCodeShort.KEY_D);
                         _lastActionTimestamp = Environment.TickCount;
+                        wasStunnedLastTick = isCurrentlyStunned;
+                        return true; // <<< DEVUELVE TRUE: Se ha tomado una acción
                     }
                 }
             }
 
             wasStunnedLastTick = isCurrentlyStunned;
+            return false; // <<< DEVUELVE FALSE: No se tomó ninguna acción
         }
 
         private static bool PixelSearch(Rectangle searchArea, Color[] pattern)
