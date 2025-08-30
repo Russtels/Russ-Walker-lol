@@ -2,9 +2,7 @@
 using System.Windows.Forms;
 using System.Threading;
 using System.Drawing;
-using System.Windows.Forms;
 using System.Diagnostics;
-using refactor;
 
 namespace refactor
 {
@@ -31,9 +29,10 @@ namespace refactor
             Application.SetCompatibleTextRenderingDefault(false);
             new Thread(() => new Drawings().Run()) { IsBackground = true }.Start();
 
-            new Thread(() => AntiCCLoop()) { IsBackground = true }.Start();
+            // Inicia el hilo de BAJA FRECUENCIA para la disponibilidad de hechizos/objetos
+            new Thread(() => AvailabilityCheckLoop()) { IsBackground = true }.Start();
 
-
+            // Bucle principal de ALTA FRECUENCIA
             while (true)
             {
                 if (SpecialFunctions.IsTargetProcessFocused("League of Legends"))
@@ -41,6 +40,8 @@ namespace refactor
                     await UpdateGameState();
                     if (_gameState.IsApiAvailable)
                     {
+                        // Ejecuta la detección de stun y el orbwalker en el bucle rápido
+                        AntiCC.CheckForStunAndReact(_gameState);
                         HandleOrbwalkingLogic();
                     }
                 }
@@ -49,6 +50,20 @@ namespace refactor
                     await Task.Delay(100);
                 }
                 await Task.Delay(1);
+            }
+        }
+
+        // Bucle de BAJA FRECUENCIA
+        private static void AvailabilityCheckLoop()
+        {
+            while (true)
+            {
+                if (SpecialFunctions.IsTargetProcessFocused("League of Legends") && _gameState.IsApiAvailable)
+                {
+                    AntiCC.UpdateAvailability(_gameState);
+                }
+                // Comprueba la disponibilidad cada 250ms, es más que suficiente y muy eficiente.
+                Thread.Sleep(250);
             }
         }
 
@@ -64,7 +79,6 @@ namespace refactor
         private static void HandleOrbwalkingLogic()
         {
             bool isSpacePressed = (GetAsyncKeyState(Keys.Space) & 0x8000) != 0;
-
             HandleKeyToggle(Values.ShowAttackRange, ref _showAttackRangePressed, InputSimulator.ScanCodeShort.KEY_C);
             HandleKeyToggle(Values.AttackChampionOnly, ref _attackChampionsOnlyPressed, middleMouse: true);
 
@@ -92,67 +106,29 @@ namespace refactor
 
         private static async Task OrbwalkEnemyAsync()
         {
-            // FASE DE ATAQUE
             if (SpecialFunctions.CanAttack(_gameState.AttackSpeed))
             {
                 Point enemyPosition = await ScreenCapture.GetEnemyPosition(_gameState.AttackRange);
-
                 if (enemyPosition != Point.Empty && !_gameState.IsDead)
                 {
-                    // 1. Guarda la posición del cursor para el kiteo.
                     Point kitePosition = Cursor.Position;
-
-                    // 2. Ejecuta el ATAQUE DIRECTO sobre el enemigo.
                     SpecialFunctions.ClickAt(enemyPosition);
-
-                    // =================================================================
-                    // INICIO DE LA CORRECCIÓN CRÍTICA
-                    // Añadimos una pequeña pausa para darle tiempo al juego a procesar el clic
-                    // mientras el cursor AÚN está sobre el enemigo.
-                    // =================================================================
                     await Task.Delay(25);
-                    // =================================================================
-                    // FIN DE LA CORRECCIÓN
-                    // =================================================================
-
-                    // 3. Restaura la posición del cursor a donde el usuario estaba apuntando.
                     SpecialFunctions.SetCursorPos(kitePosition.X, kitePosition.Y);
-
-                    // 4. Establece los temporizadores para el siguiente ataque y para el movimiento.
                     int windupDelay = SpecialFunctions.GetAttackWindup(_gameState.AttackSpeed);
                     SpecialFunctions.AAtick = Environment.TickCount;
                     SpecialFunctions.MoveCT = Environment.TickCount + windupDelay + Values.PingBufferMilliseconds;
                 }
                 else
                 {
-                    // Si no hay enemigos, moverse hacia el cursor.
                     SpecialFunctions.Click();
                 }
             }
-            // FASE DE MOVIMIENTO (KITEO)
             else if (SpecialFunctions.CanMove())
             {
-                // Este clic se ejecuta después del windup, en la dirección que el usuario
-                // eligió (porque ya restauramos la posición del cursor).
                 SpecialFunctions.Click();
                 SpecialFunctions.MoveCT = Environment.TickCount + _random.Next(40, 60);
             }
         }
-
-        private static void AntiCCLoop()
-        {
-            while (true)
-            {
-                // Solo ejecuta la lógica si el juego está en primer plano y la API está activa
-                if (SpecialFunctions.IsTargetProcessFocused("League of Legends") && _gameState.IsApiAvailable)
-                {
-                    AntiCC.Update(_gameState);
-                }
-
-                // Pausa de 100ms. Es suficiente para reaccionar a tiempo a un stun sin consumir CPU de más.
-                Thread.Sleep(25);
-            }
-        }
-
     }
 }

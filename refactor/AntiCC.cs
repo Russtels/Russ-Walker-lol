@@ -14,10 +14,10 @@ namespace refactor
         {
             { 1, new Rectangle(1070, 990, 30, 30) },
             { 2, new Rectangle(1100, 990, 30, 30) },
-            { 3, new Rectangle(1130, 990, 30, 30) }, // <-- COORDENADA CORREGIDA
+            { 3, new Rectangle(1134, 990, 30, 30) }, // <-- COORDENADA CORREGIDA
             { 5, new Rectangle(1070, 1021, 30, 30) },
-            { 6, new Rectangle(1103, 1021, 32, 28) },
-            { 7, new Rectangle(1135, 1021, 32, 28) }
+            { 6, new Rectangle(1100, 1021, 30, 30) },
+            { 7, new Rectangle(1135, 1021, 30, 30) }
         };
 
         // === PATRONES DE PÍXELES ===
