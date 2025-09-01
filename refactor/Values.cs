@@ -1,48 +1,56 @@
 ﻿using System.Drawing;
+using System.Collections.Generic;
 
 namespace refactor
 {
     class Values
     {
-        // Configuraciones y Toggles
-        public static bool ShowAttackRange { get; set; } = false;
-        public static bool AttackChampionOnly { get; set; } = false;
-        public static bool DrawingsEnabled { get; set; } = true;
+        #region Configuración del Orbwalker
+        public static bool DrawingsEnabled { get; set; } = true; // Habilitar/Deshabilitar todas las ayudas visuales
+        public static bool ShowAttackRange { get; set; } = true; //    Mostrar el rango de ataque
+        public static bool AttackChampionOnly { get; set; } = false; // Atacar solo campeones enemigos (need fix)
         public static int SleepOnLowAS { get; set; } = 100;
 
-        // Anti CC
-        public static bool AntiCC_DebugMode { get; set; } = true; // Habilita el modo de depuración para guardar capturas
+        public const int PingBufferMilliseconds = 65;// Ajusta este valor según tu ping para mejorar la sincronización
+        #endregion
 
-        public static bool ShowAntiCCAreaGuide { get; set; } = true; // Ponlo en 'true' para ver el rectángulo
-                                                                     // Añade esta línea
-        public static float DetectionTolerance { get; set; } = 0.10f; // 85% de coincidencia por defecto. Baja este valor para ser MENOS estricto.
+        #region Configuración del Anti-CC & Control de Estado y Tiempo
 
-        // Añade estas dos líneas para el ajuste manual del centro
-        public static int CenterOffsetX { get; set; } = 0; // Valor positivo mueve el centro a la DERECHA, negativo a la IZQUIERDA
-        public static int CenterOffsetY { get; set; } = 0; // Valor positivo mueve el centro HACIA ABAJO, negativo HACIA ARRIBA
+        public static bool wasStunnedLastTick = false; // Estado del fotograma anterior
+        public static int _lastActionTimestamp = 0; // Marca de tiempo de la última acción
+        public const int ActionCooldownMs = 150; // Tiempo mínimo entre acciones (ms)
+        public static bool ShowAntiCCAreaGuide { get; set; } = false; // Mostrar guía visual del área de detección
 
-        // Propiedades de Windup
+        // Coordenadas de Detección
+        public static readonly Rectangle StunArea = new Rectangle(1169, 1023, 30, 23);
+        public static readonly Rectangle Summoner1Area = new Rectangle(984, 991, 36, 34);
+        public static readonly Rectangle Summoner2Area = new Rectangle(1021, 991, 36, 34);
+        public static readonly Dictionary<int, Rectangle> ItemSlots = new Dictionary<int, Rectangle>
+        {
+            { 1, new Rectangle(1070, 990, 30, 30) },
+            { 2, new Rectangle(1100, 990, 30, 30) },
+            //other slots
+            //{ 3, new Rectangle(1134, 990, 30, 30) },
+            //{ 5, new Rectangle(1070, 1021, 30, 30) },
+            //{ 6, new Rectangle(1100, 1021, 30, 30) },
+            //{ 7, new Rectangle(1135, 1021, 30, 30) }
+        };
 
-        // Buffer de latencia en ms (ping / LAG)
-        public const int PingBufferMilliseconds = 65; // Búfer de 65ms para la latencia
-        public static float Windup { get; private set; } = 15.0f; // Windup porcentual
+        // Patrones de Píxeles para el Anti-CC
+        public static readonly Color[] StunPattern = { Color.FromArgb(101, 29, 29), Color.FromArgb(98, 26, 27) };
+        public static readonly Color[] CleansePattern = { Color.FromArgb(77, 194, 162), Color.FromArgb(182, 235, 224) };
+        public static readonly Color[] MercurialPattern = { Color.FromArgb(239, 255, 57), Color.FromArgb(189, 210, 47) };
+        #endregion
 
-        // Constantes de píxeles para el Anti-CC
-        public static readonly Color StunCheckPix1 = Color.FromArgb(103, 27, 28);
-
-        public static readonly Color CleanseCheckPix1 = Color.FromArgb(60, 236, 187);
-        public static readonly Color CleanseCheckPix2 = Color.FromArgb(103, 27, 28);
-
-        public static readonly Color MercurialCheckPix1 = Color.FromArgb(173, 220, 3);
-        public static readonly Color MercurialCheckPix2 = Color.FromArgb(248, 248, 157);
-
-
-        // Constantes de píxeles
+        #region Datos del Juego (Enemigos y Windups)
+        // Constantes de píxeles para enemigos
         public static readonly Color EnemyPix = Color.FromArgb(52, 3, 0);
         public static readonly Color EnemyPix1 = Color.FromArgb(53, 3, 0);
         public static readonly Color EnemyPixBS = Color.FromArgb(148, 81, 165);
         public static readonly Color EnemyPixBS1 = Color.FromArgb(82, 40, 90);
 
+        // Windup (se actualiza dinámicamente)
+        public static float Windup { get; private set; } = 15.0f;
         private static readonly Dictionary<string, float> ChampionWindups = new Dictionary<string, float>
         {
             {"Akshan", 13.33f}, {"Aphelios", 15.333f}, {"Ashe", 21.93f}, {"Caitlyn", 17.708f},
@@ -52,9 +60,7 @@ namespace refactor
             {"Lucian", 15.00f}, {"MissFortune", 14.801f}, {"Quinn", 17.544f},
             {"Samira", 15.00f}, {"Senna", 31.25f}, {"Sivir", 12.00f}, {"Smolder", 16.622f},
             {"Tristana", 14.80f}, {"Twitch", 20.192f}, {"Varus", 17.544f}, {"Vayne", 17.544f},
-            {"Xayah", 17.687f}, {"Yunara", 16.255f}, {"Zeri", 15.625f}
-
-
+            {"Xayah", 17.687f}, {"Zeri", 15.625f}
         };
         private const float Other_wu = 15.0f;
 
@@ -71,5 +77,6 @@ namespace refactor
                 Windup = Other_wu;
             }
         }
+        #endregion
     }
 }

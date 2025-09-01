@@ -1,96 +1,101 @@
-﻿using System.Drawing;
+﻿#region Imports de Sistema
+using System;
+using System.Collections.Generic;
+using System.Drawing;
 using System.Drawing.Imaging;
+using System.Linq;
+using System.Threading.Tasks;
 using Hazdryx.Drawing;
+#endregion
 
 namespace refactor
 {
     public class AntiCC
     {
-        // === ÁREAS DE DETECCIÓN (CON SLOT 3 CORREGIDO) ===
-        private static readonly Rectangle StunArea = new Rectangle(1169, 1023, 30, 23);
-        private static readonly Rectangle Summoner1Area = new Rectangle(984, 991, 36, 34);
-        private static readonly Rectangle Summoner2Area = new Rectangle(1021, 991, 36, 34);
-            internal static readonly Dictionary<int, Rectangle> ItemSlots = new Dictionary<int, Rectangle>
-        {
-            { 1, new Rectangle(1070, 990, 30, 30) },
-            { 2, new Rectangle(1100, 990, 30, 30) },
-        };
 
-        // === PATRONES DE PÍXELES ===
-        private static readonly Color[] StunPattern = { Values.StunCheckPix1};
-        private static readonly Color[] CleansePattern = { Values.CleanseCheckPix1};
-        private static readonly Color[] MercurialPattern = { Values.MercurialCheckPix1};
 
-        // === CONTROL DE ESTADO Y TIEMPO ===
-        private static bool wasStunnedLastTick = false;
-        private static int _lastActionTimestamp = 0;
-        private const int ActionCooldownMs = 2000;
-
-        // BUCLE LENTO: Se ejecuta en un hilo secundario para comprobar la disponibilidad
+        #region Lógica Principal (Bucles Lento y Rápido)
+        /// <summary>
+        /// BUCLE LENTO: Comprueba si Cleanse o Cimitarra están disponibles.
+        /// Se ejecuta en un hilo secundario para eficiencia.
+        /// </summary>
         public static void UpdateAvailability(GameState gameState)
         {
-            gameState.IsCleanseReady = PixelSearch(Summoner1Area, CleansePattern) || PixelSearch(Summoner2Area, CleansePattern);
+            // Comprueba si Cleanse está listo en alguno de los dos slots
+            gameState.IsCleanseReady = PixelSearch(Values.Summoner1Area, Values.CleansePattern) || PixelSearch(Values.Summoner2Area, Values.CleansePattern);
 
+            // Comprueba si la Cimitarra está lista en alguno de los slots de objetos
             gameState.IsMercurialReady = false;
-            int mercurialSlot = -1;
-            foreach (var slot in ItemSlots)
+            foreach (var slot in Values.ItemSlots)
             {
-                if (PixelSearch(slot.Value, MercurialPattern))
+                if (PixelSearch(slot.Value, Values.MercurialPattern))
                 {
                     gameState.IsMercurialReady = true;
-                    mercurialSlot = slot.Key;
                     break;
                 }
             }
 
-            // Actualiza el overlay
+            // Actualiza el estado para que el overlay lo pueda leer
             GameState.Current.IsCleanseReady = gameState.IsCleanseReady;
             GameState.Current.IsMercurialReady = gameState.IsMercurialReady;
         }
 
-        // BUCLE RÁPIDO: Se ejecuta en el hilo principal para una reacción instantánea
+        /// <summary>
+        /// BUCLE RÁPIDO: Comprueba si el jugador está stunneado y reacciona al instante.
+        /// Se ejecuta en el hilo principal para mínima latencia.
+        /// </summary>
+        /// <returns>Devuelve TRUE si se realizó una acción (ej. usar Cleanse).</returns>
         public static bool CheckForStunAndReact(GameState gameState)
         {
-            bool isCurrentlyStunned = PixelSearch(StunArea, StunPattern);
+            bool isCurrentlyStunned = PixelSearch(Values.StunArea, Values.StunPattern);
             gameState.IsStunned = isCurrentlyStunned;
             GameState.Current.IsStunned = isCurrentlyStunned;
 
-            // La condición clave: reacciona solo en el fotograma exacto en que el estado cambia
-            if (isCurrentlyStunned && !wasStunnedLastTick)
+            // Reacciona solo en el fotograma exacto en que el estado cambia de NO stun a SÍ stun
+            if (isCurrentlyStunned && !Values.wasStunnedLastTick)
             {
-                bool canAct = Environment.TickCount > _lastActionTimestamp + ActionCooldownMs;
+                bool canAct = Environment.TickCount > Values._lastActionTimestamp + Values.ActionCooldownMs;
                 if (canAct)
                 {
+                    // Prioridad 1: Cimitarra
                     if (gameState.IsMercurialReady)
                     {
-                        foreach (var slot in ItemSlots)
+                        // Vuelve a buscar la ranura exacta del objeto antes de usarlo
+                        foreach (var slot in Values.ItemSlots)
                         {
-                            if (PixelSearch(slot.Value, MercurialPattern))
+                            if (PixelSearch(slot.Value, Values.MercurialPattern))
                             {
                                 Console.WriteLine($"[ANTI-CC] REACCIÓN INSTANTÁNEA. USANDO CIMITARRA (Slot {slot.Key})...");
                                 InputSimulator.PressItemKey(slot.Key);
-                                _lastActionTimestamp = Environment.TickCount;
-                                wasStunnedLastTick = isCurrentlyStunned;
-                                return true; // <<< DEVUELVE TRUE: Se ha tomado una acción
+                                Values._lastActionTimestamp = Environment.TickCount;
+                                Values.wasStunnedLastTick = isCurrentlyStunned;
+                                return true; // Acción realizada
                             }
                         }
                     }
+                    // Prioridad 2: Cleanse
                     else if (gameState.IsCleanseReady)
                     {
                         Console.WriteLine("[ANTI-CC] REACCIÓN INSTANTÁNEA. USANDO CLEANSE...");
                         InputSimulator.SendKeyDown(InputSimulator.ScanCodeShort.KEY_D);
                         InputSimulator.SendKeyUp(InputSimulator.ScanCodeShort.KEY_D);
-                        _lastActionTimestamp = Environment.TickCount;
-                        wasStunnedLastTick = isCurrentlyStunned;
-                        return true; // <<< DEVUELVE TRUE: Se ha tomado una acción
+                        Values._lastActionTimestamp = Environment.TickCount;
+                        Values.wasStunnedLastTick = isCurrentlyStunned;
+                        return true; // Acción realizada
                     }
                 }
             }
 
-            wasStunnedLastTick = isCurrentlyStunned;
-            return false; // <<< DEVUELVE FALSE: No se tomó ninguna acción
+            Values.wasStunnedLastTick = isCurrentlyStunned;
+            return false; // No se realizó ninguna acción
         }
+        #endregion
 
+        #region Motor de Búsqueda de Píxeles
+        /// <summary>
+        /// Motor de búsqueda de patrones de píxeles, basado en la lógica de ScreenCapture.cs.
+        /// </summary>
+        /// <returns>Devuelve TRUE si encuentra el patrón en el área especificada.</returns>
         private static bool PixelSearch(Rectangle searchArea, Color[] pattern)
         {
             if (searchArea.Width <= 0 || searchArea.Height <= 0) return false;
@@ -133,5 +138,6 @@ namespace refactor
             catch (Exception ex) { Console.WriteLine($"Error en PixelSearch de AntiCC: {ex.Message}"); }
             return found;
         }
+        #endregion
     }
 }

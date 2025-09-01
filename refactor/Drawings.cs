@@ -84,9 +84,9 @@ namespace refactor
                 // =================================================================
                 // INICIO: ESTADOS DEL ANTI-CC
                 // =================================================================
-                var stunStatusText = $"Stun: {(state.IsStunned ? "SI" : "NO")}";
-                var cleanseStatusText = $"Cleanse: {(state.IsCleanseReady ? "LISTO" : "NO")}";
-                var mercurialStatusText = $"Mercurial: {(state.IsMercurialReady ? "LISTO" : "NO")}";
+                var stunStatusText = $"Status Stun: {(state.IsStunned ? "SI" : "NO")}";
+                var cleanseStatusText = $"Status Cleanse: {(state.IsCleanseReady ? "LISTO" : "NO")}";
+                var mercurialStatusText = $"Status Mercurial: {(state.IsMercurialReady ? "LISTO" : "NO")}";
 
                 gfx.DrawTextWithBackground(_font, _fontBrush, state.IsStunned ? _antiCCAreaBrush : _infoBrush, 530, _graphicsWindow.Height - 85, stunStatusText);
                 gfx.DrawTextWithBackground(_font, _fontBrush, state.IsCleanseReady ? _orbwalkerActivatedBrush : _infoBrush, 530, _graphicsWindow.Height - 100, cleanseStatusText);
@@ -95,7 +95,7 @@ namespace refactor
                 // FIN: ESTADOS DEL ANTI-CC
                 // =================================================================
                 ///DEBUG
-                foreach (var itemSlot in AntiCC.ItemSlots)
+                foreach (var itemSlot in Values.ItemSlots)
                 {
                     // Convierte el Rectangle de System.Drawing al del overlay
                     var rect = new GameOverlay.Drawing.Rectangle(
