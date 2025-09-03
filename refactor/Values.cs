@@ -4,7 +4,14 @@ using System.Collections.Generic;
 namespace refactor
 {
     class Values
+
+
     {
+        //DEBUG :
+
+        // Debajo de _attackChampionsOnlyPressed
+        public static bool apiLogDebugEnable = true; // Habilitar/Deshabilitar logs de depuración de la API
+
         #region Configuración del Orbwalker
         public static bool DrawingsEnabled { get; set; } = true; // Habilitar/Deshabilitar todas las ayudas visuales
         public static bool ShowAttackRange { get; set; } = true; //    Mostrar el rango de ataque
@@ -13,6 +20,9 @@ namespace refactor
 
         public const int PingBufferMilliseconds = 65;// Ajusta este valor según tu ping para mejorar la sincronización
         #endregion
+        //autofarm
+        public static bool AutoFarmEnabled { get; set; } = true;
+
 
         #region Configuración del Anti-CC & Control de Estado y Tiempo
 
@@ -40,6 +50,13 @@ namespace refactor
         public static readonly Color[] StunPattern = { Color.FromArgb(101, 29, 29), Color.FromArgb(98, 26, 27) };
         public static readonly Color[] CleansePattern = { Color.FromArgb(77, 194, 162), Color.FromArgb(182, 235, 224) };
         public static readonly Color[] MercurialPattern = { Color.FromArgb(239, 255, 57), Color.FromArgb(189, 210, 47) };
+
+        // LastHit helper Pixel Patterns
+        public static readonly Color[] LastHitPattern = { Color.FromArgb(219, 226, 231), Color.FromArgb(219, 226, 231) };
+
+
+
+
         #endregion
 
         #region Datos del Juego (Enemigos y Windups)
@@ -48,6 +65,11 @@ namespace refactor
         public static readonly Color EnemyPix1 = Color.FromArgb(53, 3, 0);
         public static readonly Color EnemyPixBS = Color.FromArgb(148, 81, 165);
         public static readonly Color EnemyPixBS1 = Color.FromArgb(82, 40, 90);
+        public static readonly Color EnemyPixArena = Color.FromArgb(148, 81, 165);
+        public static readonly Color EnemyPixArena2 = Color.FromArgb(148, 81, 165);
+
+
+
 
         // Windup (se actualiza dinámicamente)
         public static float Windup { get; private set; } = 15.0f;

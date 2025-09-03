@@ -54,7 +54,7 @@ namespace refactor
                         bool actionTakenByAntiCC = AntiCC.CheckForStunAndReact(_gameState);
                         if (!actionTakenByAntiCC)
                         {
-                            HandleOrbwalkingLogic();
+                            HandleUserInputLogic();
                         }
                     }
                 }
@@ -95,25 +95,89 @@ namespace refactor
         }
         #endregion
 
-        #region Lógica del Orbwalker
+        #region Lógica del Orbwalker y auto farm
         /// <summary>
-        /// Gestiona la entrada del usuario (barra espaciadora) para activar el orbwalking.
+        /// Gestiona la entrada del usuario para activar el Orbwalker o el Auto-Farm.
+        /// Le da prioridad al Orbwalker (Space) sobre el Auto-Farm (V).
         /// </summary>
-        private static void HandleOrbwalkingLogic()
+        private static void HandleUserInputLogic()
         {
-            bool isSpacePressed = (GetAsyncKeyState(Keys.Space) & 0x8000) != 0;
+            // Gestiona los toggles de opciones (C, Botón central, etc.)
             HandleKeyToggle(Values.ShowAttackRange, ref _showAttackRangePressed, InputSimulator.ScanCodeShort.KEY_C);
             HandleKeyToggle(Values.AttackChampionOnly, ref _attackChampionsOnlyPressed, middleMouse: true);
 
-            if (isSpacePressed)
+            // Revisa el estado de las teclas de acción principal
+            bool isOrbwalkPressed = (GetAsyncKeyState(Keys.Space) & 0x8000) != 0;
+            bool isFarmPressed = (GetAsyncKeyState(Keys.V) & 0x8000) != 0;
+            bool isF1Pressed = (GetAsyncKeyState(Keys.F1) & 0x8000) != 0;
+
+
+            // Lógica de prioridad: Orbwalker > Auto-Farm
+            if (isOrbwalkPressed)
             {
                 OrbwalkEnemyAsync().Wait();
+            }
+            else if (isFarmPressed && Values.AutoFarmEnabled)
+            {
+                AutoFarm.ExecuteLastHitLogic(_gameState).Wait();
+            }
+            // DEBUG: Lógica para la tecla F1
+            if (isF1Pressed && !Values.apiLogDebugEnable)
+            {
+                // Llama a un nuevo método para mostrar los datos de la API.
+                // Usamos .Wait() para asegurar que la tarea asíncrona se complete.
+                ShowApiLogAsync().Wait();
+                Values.apiLogDebugEnable = true; // Marca la tecla como presionada
+            }
+            else if (!isF1Pressed && Values.apiLogDebugEnable)
+            {
+                Values.apiLogDebugEnable = false; // Resetea el estado cuando se suelta la tecla
+            }
+        }
+        /// <summary>
+        /// Lógica principal del Orbwalker: decide si atacar o moverse.
+        /// </summary>
+        /// 
+
+        /// <summary>
+        /// Procesa las acciones continuas como Orbwalk y Auto-Farm, respetando su prioridad.
+        /// </summary>
+        private static void ProcessActionKeys()
+        {
+            bool isOrbwalkPressed = (GetAsyncKeyState(Keys.Space) & 0x8000) != 0;
+            bool isFarmPressed = (GetAsyncKeyState(Keys.V) & 0x8000) != 0;
+
+            // La estructura if/else if es la correcta aquí para mantener la prioridad: Orbwalker > Auto-Farm
+            if (isOrbwalkPressed)
+            {
+                OrbwalkEnemyAsync().Wait();
+            }
+            else if (isFarmPressed && Values.AutoFarmEnabled)
+            {
+                AutoFarm.ExecuteLastHitLogic(_gameState).Wait();
             }
         }
 
         /// <summary>
-        /// Lógica principal del Orbwalker: decide si atacar o moverse.
+        /// Procesa las teclas de depuración que funcionan como un evento de una sola pulsación.
         /// </summary>
+        private static async Task ProcessDebugKeys()
+        {
+            bool isF1Pressed = (GetAsyncKeyState(Keys.F1) & 0x8000) != 0;
+
+            // La lógica de "toggle" para la tecla F1
+            if (isF1Pressed && !Values.apiLogDebugEnable)
+            {
+                await ShowApiLogAsync();
+                Values.apiLogDebugEnable = true; // Marca la tecla como presionada
+            }
+            else if (!isF1Pressed && Values.apiLogDebugEnable)
+            {
+                Values.apiLogDebugEnable = false; // Resetea el estado cuando se suelta la tecla
+            }
+        }
+
+
         private static async Task OrbwalkEnemyAsync()
         {
             if (SpecialFunctions.CanAttack(_gameState.AttackSpeed))
@@ -164,6 +228,27 @@ namespace refactor
                 keyPressedState = false;
             }
         }
+
+        /// <summary>
+        /// Obtiene y muestra los datos JSON sin procesar del endpoint /activeplayer de la API.
+        /// </summary>
+        private static async Task ShowApiLogAsync()
+        {
+            Console.Clear(); // Limpia la consola para una mejor visualización
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine("======================= LOG DE LA API (F1) =======================");
+
+            // Llama a un método en la clase ApiClient para obtener los datos
+            string apiData = await _apiClient.GetRawActivePlayerDataAsync();
+
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.WriteLine(apiData); // Muestra el JSON en la consola
+
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine("==================================================================");
+            Console.ResetColor();
+        }
+
         #endregion
     }
 }

@@ -59,5 +59,23 @@ namespace refactor
                 gameState.IsApiAvailable = false;
             }
         }
+
+        /// <summary>
+        /// Obtiene la respuesta JSON sin procesar del endpoint /activeplayer.
+        /// </summary>
+        /// <returns>Un string con el JSON formateado o un mensaje de error.</returns>
+        public async Task<string> GetRawActivePlayerDataAsync()
+        {
+            try
+            {
+                string rawJson = await _httpClient.GetStringAsync(BaseUrl + "activeplayer");
+                // Parsea y vuelve a formatear el JSON para que se vea bien indentado en la consola
+                return JObject.Parse(rawJson).ToString(Newtonsoft.Json.Formatting.Indented);
+            }
+            catch (Exception ex)
+            {
+                return $"No se pudo obtener datos de la API: {ex.Message}";
+            }
+        }
     }
 }
