@@ -7,7 +7,7 @@
 > [!NOTE] 
 > I will try to update this every patch and add every champion to the game , i will keep this free but if u use it consider buying me a coffee 
 
-<img src="https://raw.githubusercontent.com/Russtels/QR/main/binance(1).jpg" alt="App Screenshot" width="">
+<img src="https://raw.githubusercontent.com/Russtels/QR/blob/main/binance%20(1).jpg" alt="App Screenshot" width="">
 
 
 This project is an advanced external utility for League of Legends, written entirely in C#. It leverages a hybrid approach of pixel scanning and the official Live Client Data API to provide high-performance, responsive gameplay assistance. The primary goal is to achieve perfect orbwalking (kiting) mechanics, supplemented by other useful automated features.
