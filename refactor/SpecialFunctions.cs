@@ -71,5 +71,20 @@ namespace refactor
             if (GameState.Current.ChampionName == "Kalista") return true;
             return MoveCT <= Environment.TickCount;
         }
+
+        public static float DistanceToPlayer(Point target)
+        {
+            // Obtiene la posición del jugador (centro de la pantalla)
+            int playerX = Screen.PrimaryScreen!.Bounds.Width / 2;
+            int playerY = Screen.PrimaryScreen!.Bounds.Height / 2;
+
+            // Calcula la diferencia en los ejes X e Y
+            float dx = target.X - playerX;
+            float dy = target.Y - playerY;
+
+            // Aplica el teorema de Pitágoras para obtener la distancia
+            return (float)Math.Sqrt(dx * dx + dy * dy);
+        }
+
     }
 }

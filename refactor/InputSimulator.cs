@@ -1102,7 +1102,7 @@ namespace refactor
         // Añade estos dos métodos nuevos
 
         // Añade estos dos métodos nuevos al final de la clase InputSimulator
-        private static void PressKey(ScanCodeShort key)
+        public static void PressKey(ScanCodeShort key)
         {
             SendKeyDown(key);
             SendKeyUp(key);

@@ -81,6 +81,11 @@ namespace refactor
                     gfx.DrawTextWithBackground(_font, _fontBrush, _orbwalkerActivatedBrush, (_graphicsWindow.Width / 2f) - 70, _graphicsWindow.Height - 500, "Orbwalker: ON");
                 }
 
+                if (ChampionManager.CurrentChampionLogic != null)
+                {
+                    ChampionManager.CurrentChampionLogic.DrawSpells(gfx);
+                }
+
                 // =================================================================
                 // INICIO: ESTADOS DEL ANTI-CC
                 // =================================================================

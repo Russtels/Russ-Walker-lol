@@ -17,7 +17,7 @@ namespace refactor
         private static extern bool AllocConsole();
 
         [DllImport("user32.dll")]
-        private static extern short GetAsyncKeyState(Keys vKey);
+        public static extern short GetAsyncKeyState(Keys vKey);
         #endregion
 
         #region Configuración Principal y Variables Globales
@@ -37,6 +37,7 @@ namespace refactor
             AllocConsole();
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+            ChampionManager.Initialize();
 
             // Inicia los hilos secundarios para tareas en segundo plano
             new Thread(() => new Drawings().Run()) { IsBackground = true, Name = "DrawingsThread" }.Start();
@@ -91,6 +92,8 @@ namespace refactor
             if (_gameState.IsApiAvailable)
             {
                 Values.UpdateChampionWindup(_gameState.ChampionName);
+                ChampionManager.Update(_gameState.ChampionName);
+
             }
         }
         #endregion
@@ -102,46 +105,52 @@ namespace refactor
         /// </summary>
         private static void HandleUserInputLogic()
         {
-            // Gestiona los toggles de opciones (C, Botón central, etc.)
-            HandleKeyToggle(Values.ShowAttackRange, ref _showAttackRangePressed, InputSimulator.ScanCodeShort.KEY_C);
-            HandleKeyToggle(Values.AttackChampionOnly, ref _attackChampionsOnlyPressed, middleMouse: true);
-
-            // Revisa el estado de las teclas de acción principal
-            bool isOrbwalkPressed = (GetAsyncKeyState(Keys.Space) & 0x8000) != 0;
+            // Revisa el estado de las teclas de activación
+            bool isActionPressed = (GetAsyncKeyState(Keys.Space) & 0x8000) != 0; // Tecla de acción principal
             bool isFarmPressed = (GetAsyncKeyState(Keys.V) & 0x8000) != 0;
             bool isF1Pressed = (GetAsyncKeyState(Keys.F1) & 0x8000) != 0;
 
+            // Gestiona los toggles de opciones
+            HandleKeyToggle(Values.ShowAttackRange, ref _showAttackRangePressed, InputSimulator.ScanCodeShort.KEY_C);
+            HandleKeyToggle(Values.AttackChampionOnly, ref _attackChampionsOnlyPressed, middleMouse: true);
 
-            // Lógica de prioridad: Orbwalker > Auto-Farm
-            if (isOrbwalkPressed)
+            // Lógica de Prioridad: Acción Principal > Auto-Farm
+            if (isActionPressed)
             {
-                OrbwalkEnemyAsync().Wait();
+                if (ChampionManager.CurrentChampionLogic != null)
+                {
+                    // La lógica del campeón (incluyendo la R) se gestiona aquí
+                    ChampionManager.CurrentChampionLogic.ExecuteCombo(_gameState);
+                }
+                else
+                {
+                    // Orbwalker estándar si no hay lógica de campeón
+                    OrbwalkEnemyAsync().Wait();
+                }
             }
             else if (isFarmPressed && Values.AutoFarmEnabled)
             {
                 AutoFarm.ExecuteLastHitLogic(_gameState).Wait();
             }
-            // DEBUG: Lógica para la tecla F1
+
+            // Lógica para la tecla de depuración F1
             if (isF1Pressed && !Values.apiLogDebugEnable)
             {
-                // Llama a un nuevo método para mostrar los datos de la API.
-                // Usamos .Wait() para asegurar que la tarea asíncrona se complete.
                 ShowApiLogAsync().Wait();
-                Values.apiLogDebugEnable = true; // Marca la tecla como presionada
+                Values.apiLogDebugEnable = true;
             }
             else if (!isF1Pressed && Values.apiLogDebugEnable)
             {
-                Values.apiLogDebugEnable = false; // Resetea el estado cuando se suelta la tecla
+                Values.apiLogDebugEnable = false;
             }
-        }
-        /// <summary>
-        /// Lógica principal del Orbwalker: decide si atacar o moverse.
-        /// </summary>
-        /// 
+        }        /// <summary>
+                 /// Lógica principal del Orbwalker: decide si atacar o moverse.
+                 /// </summary>
+                 /// 
 
-        /// <summary>
-        /// Procesa las acciones continuas como Orbwalk y Auto-Farm, respetando su prioridad.
-        /// </summary>
+                 /// <summary>
+                 /// Procesa las acciones continuas como Orbwalk y Auto-Farm, respetando su prioridad.
+                 /// </summary>
         private static void ProcessActionKeys()
         {
             bool isOrbwalkPressed = (GetAsyncKeyState(Keys.Space) & 0x8000) != 0;
@@ -178,7 +187,7 @@ namespace refactor
         }
 
 
-        private static async Task OrbwalkEnemyAsync()
+        public static async Task OrbwalkEnemyAsync()
         {
             if (SpecialFunctions.CanAttack(_gameState.AttackSpeed))
             {

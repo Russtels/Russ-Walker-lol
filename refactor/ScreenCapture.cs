@@ -172,5 +172,42 @@ namespace refactor
             double x = (rect.Width / 2.0 - X) / ratio;
             return x * x + y * y <= r * r;
         }
+
+
+        /// <summary>
+        /// Comprueba si una habilidad está lista para usarse buscando un patrón de píxeles en un área específica.
+        /// </summary>
+        /// <param name="abilityArea">El rectángulo de la pantalla donde se encuentra el icono de la habilidad.</param>
+        /// <param name="readyPattern">El patrón de píxeles que indica que la habilidad está disponible.</param>
+        /// <returns>True si la habilidad está lista, de lo contrario False.</returns>
+        public static bool IsAbilityReady(Rectangle abilityArea, Color[] readyPattern)
+        {
+            // Reutiliza el motor de búsqueda de patrones que ya tenemos.
+            // Si encuentra el patrón, devuelve 'true'.
+            return FindFirstPattern(abilityArea, readyPattern) != Point.Empty;
+        }
+
+        /// <summary>
+        /// Busca y devuelve la posición del enemigo más cercano al CURSOR del ratón.
+        /// </summary>
+        public static async Task<Point> GetEnemyPositionClosestToCursor(float maxRange)
+        {
+            if (maxRange <= 0) return Point.Empty;
+
+            Rectangle searchRect = new Rectangle(0, 0, Screen.PrimaryScreen!.Bounds.Width, Screen.PrimaryScreen!.Bounds.Height);
+
+            // CORRECCIÓN: Ahora pasamos los patrones de color de enemigos a la función de búsqueda
+            List<Point> allEnemies = await Task.Run(() => PixelSearchEnemies(searchRect, Values.EnemyPix, Values.EnemyPix1, Values.EnemyPixBS, Values.EnemyPixBS1));
+
+            if (allEnemies.Count > 0)
+            {
+                // Ordena la lista por distancia al cursor y devuelve el más cercano
+                Point closestEnemy = allEnemies.OrderBy(p => SquareDistance(Cursor.Position, p)).First();
+                return closestEnemy;
+            }
+
+            return Point.Empty;
+        }
+
     }
 }
