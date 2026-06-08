@@ -1,5 +1,7 @@
-﻿using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Linq;
 using System.Net;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 
 namespace refactor
 {
@@ -12,12 +14,15 @@ namespace refactor
         {
             var handler = new HttpClientHandler
             {
-                ServerCertificateCustomValidationCallback = (message, cert, chain, sslPolicyErrors) => true
+                // Only trust certs served from localhost (LoL client uses a self-signed cert on 127.0.0.1)
+                ServerCertificateCustomValidationCallback = (message, cert, chain, errors) =>
+                    message.RequestUri?.Host == "127.0.0.1"
             };
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
             _httpClient = new HttpClient(handler)
             {
-                DefaultRequestHeaders = { { "User-Agent", "MagicOrbwalker" } }
+                Timeout = TimeSpan.FromSeconds(2),
+                DefaultRequestHeaders = { { "User-Agent", "RussWalker" } }
             };
         }
 
@@ -25,16 +30,13 @@ namespace refactor
         {
             try
             {
-                // Realizar ambas llamadas en paralelo para mayor eficiencia
                 Task<string> activePlayerTask = _httpClient.GetStringAsync(BaseUrl + "activeplayer");
-                Task<string> playerListTask = _httpClient.GetStringAsync(BaseUrl + "playerlist");
-
+                Task<string> playerListTask   = _httpClient.GetStringAsync(BaseUrl + "playerlist");
                 await Task.WhenAll(activePlayerTask, playerListTask);
 
-                var activePlayerData = JObject.Parse(await activePlayerTask);
-                var playerListData = JArray.Parse(await playerListTask);
+                var activePlayerData = JObject.Parse(activePlayerTask.Result);
+                var playerListData   = JArray.Parse(playerListTask.Result);
 
-                // Actualizar el objeto GameState directamente
                 var championStats = activePlayerData["championStats"];
                 gameState.AttackSpeed = championStats?["attackSpeed"]?.Value<float>() ?? 0;
                 gameState.AttackRange = championStats?["attackRange"]?.Value<float>() ?? 0;
@@ -43,38 +45,36 @@ namespace refactor
                 {
                     var mainPlayer = playerListData[0];
                     gameState.ChampionName = mainPlayer["championName"]?.ToString() ?? "none";
-                    gameState.IsDead = mainPlayer["isDead"]?.Value<bool>() ?? true;
+                    gameState.IsDead       = mainPlayer["isDead"]?.Value<bool>() ?? true;
                 }
 
                 gameState.IsApiAvailable = true;
 
-                // Actualizar la instancia estática para el overlay
-                GameState.Current.AttackSpeed = gameState.AttackSpeed;
-                GameState.Current.AttackRange = gameState.AttackRange;
-                GameState.Current.IsDead = gameState.IsDead;
+                // Sync to shared state for drawing thread
+                GameState.Current.AttackSpeed  = gameState.AttackSpeed;
+                GameState.Current.AttackRange  = gameState.AttackRange;
+                GameState.Current.IsDead       = gameState.IsDead;
+                GameState.Current.ChampionName = gameState.ChampionName;
+                GameState.Current.IsApiAvailable = true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // Si falla la API, establecer estado no disponible
                 gameState.IsApiAvailable = false;
+                GameState.Current.IsApiAvailable = false;
+                Logger.Warning($"[API] Unavailable: {ex.Message}");
             }
         }
 
-        /// <summary>
-        /// Obtiene la respuesta JSON sin procesar del endpoint /activeplayer.
-        /// </summary>
-        /// <returns>Un string con el JSON formateado o un mensaje de error.</returns>
         public async Task<string> GetRawActivePlayerDataAsync()
         {
             try
             {
                 string rawJson = await _httpClient.GetStringAsync(BaseUrl + "activeplayer");
-                // Parsea y vuelve a formatear el JSON para que se vea bien indentado en la consola
                 return JObject.Parse(rawJson).ToString(Newtonsoft.Json.Formatting.Indented);
             }
             catch (Exception ex)
             {
-                return $"No se pudo obtener datos de la API: {ex.Message}";
+                return $"Could not reach API: {ex.Message}";
             }
         }
     }
