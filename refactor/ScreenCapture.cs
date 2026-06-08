@@ -70,12 +70,11 @@ namespace refactor
         public static async Task<Point> GetEnemyPositionClosestToCursor(float maxRange)
         {
             if (maxRange <= 0) return Point.Empty;
-            Rectangle searchRect = Screen.PrimaryScreen!.Bounds;
+            Rectangle searchRect = new Rectangle(0, 0, Screen.PrimaryScreen!.Bounds.Width, Screen.PrimaryScreen!.Bounds.Height);
             List<Point> allEnemies = await Task.Run(() =>
                 PixelSearchEnemies(searchRect, Values.EnemyPix, Values.EnemyPix1, Values.EnemyPixBS, Values.EnemyPixBS1));
-
             if (allEnemies.Count == 0) return Point.Empty;
-            return allEnemies.OrderBy(p => SquareDistance(System.Windows.Forms.Cursor.Position, p)).First();
+            return allEnemies.OrderBy(p => SquareDistance(Cursor.Position, p)).First();
         }
 
         public static bool IsAbilityReady(Rectangle abilityArea, Color[] readyPattern)
@@ -98,43 +97,52 @@ namespace refactor
             return points.OrderBy(p => SquareDistance(playerPos, p)).First();
         }
 
-        public static List<Point> PixelSearchEnemies(Rectangle rect, Color c0, Color c1, Color bs0, Color bs1)
+        public static List<Point> PixelSearchEnemies(Rectangle rect, Color PixelColor, Color PixelColor1, Color PixelColorBS, Color PixelColorBS1)
         {
             int offsetX = 65, offsetY = 95;
             if (Screen.PrimaryScreen!.Bounds.Width != 1920 || Screen.PrimaryScreen!.Bounds.Height != 1080)
             {
-                double xr = Screen.PrimaryScreen.Bounds.Width  / 1920.0;
-                double yr = Screen.PrimaryScreen.Bounds.Height / 1080.0;
-                rect    = new Rectangle((int)(rect.X * xr), (int)(rect.Y * yr), (int)(rect.Width * xr), (int)(rect.Height * yr));
-                offsetX = (int)(offsetX * xr);
-                offsetY = (int)(offsetY * yr);
+                double XRatio = (double)Screen.PrimaryScreen.Bounds.Width / 1920.0;
+                double YRatio = (double)Screen.PrimaryScreen.Bounds.Height / 1080.0;
+                rect.X = (int)(rect.X * XRatio); rect.Y = (int)(rect.Y * YRatio);
+                rect.Width = (int)(rect.Width * XRatio); rect.Height = (int)(rect.Height * YRatio);
+                offsetX = (int)(offsetX * XRatio); offsetY = (int)(offsetY * YRatio);
             }
-
-            int v0 = c0.ToArgb(),  v1 = c1.ToArgb();
-            int vb0 = bs0.ToArgb(), vb1 = bs1.ToArgb();
-
-            var points  = new List<Point>();
-            var lockObj = new object();
-
-            using var bmp = new Bitmap(rect.Width, rect.Height, PixelFormat.Format32bppRgb);
-            using (var g = Graphics.FromImage(bmp))
-                g.CopyFromScreen(rect.X, rect.Y, 0, 0, rect.Size, CopyPixelOperation.SourceCopy);
-
-            using var fast = new FastBitmap(bmp);
-            Parallel.For(0, fast.Length - 1, i =>
+            int searchvalueNormal  = PixelColor.ToArgb();
+            int searchvalueNormal1 = PixelColor1.ToArgb();
+            int searchvalueBS      = PixelColorBS.ToArgb();
+            int searchvalueBS1     = PixelColorBS1.ToArgb();
+            List<Point> Points = new List<Point>();
+            object lockObj = new object();
+            // NOTE: BMP is intentionally not in a using block — FastBitmap holds a reference
+            // to the locked bitmap data and must be disposed before BMP is freed.
+            Bitmap BMP = new Bitmap(rect.Width, rect.Height, PixelFormat.Format32bppRgb);
+            using (Graphics GFX = Graphics.FromImage(BMP))
             {
-                int cur  = fast.GetI(i);
-                int next = fast.GetI(i + 1);
-                if ((cur == v0 && next == v1) || (cur == vb0 && next == vb1))
+                GFX.CopyFromScreen(rect.X, rect.Y, 0, 0, rect.Size, CopyPixelOperation.SourceCopy);
+            }
+            using (FastBitmap bitmap = new FastBitmap(BMP))
+            {
+                Parallel.For(0, bitmap.Length - 1, i =>
                 {
-                    int x = i % fast.Width;
-                    int y = i / fast.Width;
-                    if (InCircle(x, y, rect))
-                        lock (lockObj) { points.Add(new Point(x + rect.X + offsetX, y + rect.Y + offsetY)); }
-                }
-            });
+                    int currentPixel = bitmap.GetI(i);
+                    int nextPixel    = bitmap.GetI(i + 1);
+                    if ((currentPixel == searchvalueNormal && nextPixel == searchvalueNormal1) ||
+                        (currentPixel == searchvalueBS     && nextPixel == searchvalueBS1))
+                    {
+                        AddPointToList(i, bitmap, rect, offsetX, offsetY, lockObj, Points);
+                    }
+                });
+            }
+            return Points;
+        }
 
-            return points;
+        private static void AddPointToList(int index, FastBitmap bitmap, Rectangle rect, int offsetX, int offsetY, object lockObj, List<Point> Points)
+        {
+            int x = index % bitmap.Width;
+            int y = index / bitmap.Width;
+            if (InCircle(x, y, rect))
+                lock (lockObj) { Points.Add(new Point(x + rect.X + offsetX, y + rect.Y + offsetY)); }
         }
 
         private static int SquareDistance(Point a, Point b)
@@ -143,14 +151,14 @@ namespace refactor
             return dx * dx + dy * dy;
         }
 
-        public static bool InCircle(int x, int y, Rectangle rect)
+        public static bool InCircle(int X, int Y, Rectangle rect)
         {
             if (rect.Height == 0) return false;
             double ratio = (double)rect.Width / rect.Height;
-            double r  = rect.Height / 2.0;
-            double cy = rect.Height / 2.0 - y;
-            double cx = (rect.Width  / 2.0 - x) / ratio;
-            return cx * cx + cy * cy <= r * r;
+            double r = rect.Height / 2.0;
+            double y = rect.Height / 2.0 - Y;
+            double x = (rect.Width  / 2.0 - X) / ratio;
+            return x * x + y * y <= r * r;
         }
     }
 }
