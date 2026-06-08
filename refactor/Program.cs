@@ -20,6 +20,7 @@ namespace refactor
 
         private static bool _showAttackRangePressed    = false;
         private static bool _attackChampionsOnlyPressed = false;
+        private static bool _debugDrawPressed           = false;
 
         [STAThread]
         static async Task Main()
@@ -80,6 +81,7 @@ namespace refactor
             bool isActionPressed = (GetAsyncKeyState(Keys.Space) & 0x8000) != 0;
             bool isFarmPressed   = (GetAsyncKeyState(Keys.V)     & 0x8000) != 0;
             bool isF1Pressed     = (GetAsyncKeyState(Keys.F1)    & 0x8000) != 0;
+            bool isF2Pressed     = (GetAsyncKeyState(Keys.F2)    & 0x8000) != 0;
 
             HandleKeyToggle(Values.ShowAttackRange,   ref _showAttackRangePressed,     InputSimulator.ScanCodeShort.KEY_C);
             HandleKeyToggle(Values.AttackChampionOnly, ref _attackChampionsOnlyPressed, middleMouse: true);
@@ -104,6 +106,18 @@ namespace refactor
             else if (!isF1Pressed && Values.apiLogDebugEnable)
             {
                 Values.apiLogDebugEnable = false;
+            }
+
+            // F2: toggle debug draw overlay (pixel detection areas)
+            if (isF2Pressed && !_debugDrawPressed)
+            {
+                Values.DebugDrawEnabled = !Values.DebugDrawEnabled;
+                Logger.Info($"[Debug] Draw overlay: {(Values.DebugDrawEnabled ? "ON" : "OFF")}");
+                _debugDrawPressed = true;
+            }
+            else if (!isF2Pressed)
+            {
+                _debugDrawPressed = false;
             }
         }
 

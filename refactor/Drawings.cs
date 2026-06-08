@@ -23,10 +23,6 @@ namespace refactor
         private GfxBrush _green    = null!;
         private GfxBrush _dimWhite = null!;
 
-        // Range circle brushes
-        private GfxBrush _rangeFill    = null!;
-        private GfxBrush _rangeOutline = null!;
-
         // Fonts
         private GfxFont _font     = null!;
         private GfxFont _fontBold = null!;
@@ -67,10 +63,6 @@ namespace refactor
             _green    = gfx.CreateSolidBrush(80,  255, 120);
             _dimWhite = gfx.CreateSolidBrush(200, 200, 200);
 
-            // Semi-transparent attack range circle
-            _rangeFill    = gfx.CreateSolidBrush(0, 200, 255, 12);
-            _rangeOutline = gfx.CreateSolidBrush(0, 200, 255, 120);
-
             _font     = gfx.CreateFont("Consolas", 12);
             _fontBold = gfx.CreateFont("Consolas", 13, true);
         }
@@ -87,28 +79,14 @@ namespace refactor
             float cx  = _window.Width  / 2f;
             float cy  = _window.Height / 2f;
 
-            DrawAttackRange(gfx, state, cx, cy);
             DrawStatsPanel(gfx, state);
             DrawOrbwalkerStatus(gfx, cx, cy);
 
             if (ChampionManager.CurrentChampionLogic != null)
                 ChampionManager.CurrentChampionLogic.DrawSpells(gfx);
-        }
 
-        private void DrawAttackRange(GfxGraphics gfx, GameState state, float cx, float cy)
-        {
-            if (!Values.ShowAttackRange || state.AttackRange <= 0) return;
-
-            float radius = state.AttackRange * 0.8f; // same pixels-per-unit as ScreenCapture
-
-            // Filled semi-transparent disc
-            gfx.FillCircle(_rangeFill, cx, cy, radius);
-            // Solid border
-            gfx.DrawCircle(_rangeOutline, cx, cy, radius, 1.5f);
-
-            // Range label just above the circle edge at the top
-            string label = $"{state.AttackRange:F0}";
-            gfx.DrawText(_fontBold, _rangeOutline, cx - 14, cy - radius - 18, label);
+            if (Values.DebugDrawEnabled)
+                DrawDebugOverlay(gfx);
         }
 
         private void DrawStatsPanel(GfxGraphics gfx, GameState state)
@@ -159,11 +137,60 @@ namespace refactor
                 gfx.DrawTextWithBackground(_fontBold, _black, _yellow, cx - 52, cy - 520, "  AUTO FARM ON  ");
         }
 
+        /// <summary>
+        /// F2 debug overlay: draws every pixel detection rectangle with a label and
+        /// its screen coordinates so you can verify alignment without guessing.
+        /// Color legend:  red = stun  |  yellow = summoner spells  |  cyan = items  |  orange = champion abilities
+        /// </summary>
+        private void DrawDebugOverlay(GfxGraphics gfx)
+        {
+            using var redBrush    = gfx.CreateSolidBrush(255, 60,  60);   // stun area
+            using var yellowBrush = gfx.CreateSolidBrush(255, 220, 0);    // summoner spells
+            using var cyanBrush   = gfx.CreateSolidBrush(0,   220, 255);  // item slots
+            using var bgBrush     = gfx.CreateSolidBrush(0,   0,   0,   160); // label background
+
+            // Header
+            gfx.DrawTextWithBackground(_fontBold, _black, _yellow, 10, 10, "[ F2 DEBUG MODE ]");
+
+            // --- Anti-CC detection areas ---
+            DebugRect(gfx, redBrush,    bgBrush, Values.StunArea,      "STUN");
+            DebugRect(gfx, yellowBrush, bgBrush, Values.Summoner1Area,  "SUM1 (D)");
+            DebugRect(gfx, yellowBrush, bgBrush, Values.Summoner2Area,  "SUM2 (F)");
+
+            foreach (var slot in Values.ItemSlots)
+                DebugRect(gfx, cyanBrush, bgBrush, slot.Value, $"ITEM {slot.Key}");
+
+            // --- Champion-specific areas ---
+            ChampionManager.CurrentChampionLogic?.DrawDebugAreas(gfx);
+
+            // --- Enemy scan area (based on live attack range) ---
+            var state = GameState.Current;
+            if (state.AttackRange > 0)
+            {
+                int radius  = ScreenCapture.RangeToPixelRadius(state.AttackRange);
+                int cx      = _window.Width  / 2;
+                int cy      = _window.Height / 2;
+                var scanRect = new System.Drawing.Rectangle(cx - radius, cy - radius, radius * 2, radius * 2);
+                using var scanBrush = gfx.CreateSolidBrush(180, 255, 180, 80);
+                DebugRect(gfx, scanBrush, bgBrush, scanRect, $"ENEMY SCAN r={radius}px");
+            }
+        }
+
+        /// Draws a labeled, outlined rectangle showing screen coords in the label.
+        private void DebugRect(GfxGraphics gfx, GfxBrush brush, GfxBrush bgBrush,
+            System.Drawing.Rectangle r, string label)
+        {
+            var rect = new GameOverlay.Drawing.Rectangle(r.Left, r.Top, r.Right, r.Bottom);
+            gfx.DrawRectangle(brush, rect, 1.5f);
+            string text = $"{label} [{r.X},{r.Y} {r.Width}x{r.Height}]";
+            gfx.DrawTextWithBackground(_font, _black, bgBrush, r.Left, r.Top - 16, text);
+        }
+
         private void OnDestroy(object? sender, GameOverlay.Windows.DestroyGraphicsEventArgs e)
         {
             _white?.Dispose();    _black?.Dispose();    _cyan?.Dispose();
             _yellow?.Dispose();   _red?.Dispose();      _green?.Dispose();
-            _dimWhite?.Dispose(); _rangeFill?.Dispose(); _rangeOutline?.Dispose();
+            _dimWhite?.Dispose();
             _font?.Dispose();     _fontBold?.Dispose();
         }
 

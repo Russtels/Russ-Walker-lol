@@ -149,6 +149,24 @@ namespace refactor
             return Q_MIN_RANGE + (Q_MAX_RANGE - Q_MIN_RANGE) * progress;
         }
 
+        public void DrawDebugAreas(GfxGraphics gfx)
+        {
+            if (_font == null) return;
+            using var brush = gfx.CreateSolidBrush(255, 140, 0); // orange for champion areas
+            DrawLabeledRect(gfx, brush, _font, Q_Area, "Q");
+            DrawLabeledRect(gfx, brush, _font, W_Area, "W");
+            DrawLabeledRect(gfx, brush, _font, E_Area, "E");
+            DrawLabeledRect(gfx, brush, _font, R_Area, "R");
+        }
+
+        private static void DrawLabeledRect(GfxGraphics gfx, GameOverlay.Drawing.SolidBrush brush,
+            GameOverlay.Drawing.Font font, System.Drawing.Rectangle r, string label)
+        {
+            var rect = new GameOverlay.Drawing.Rectangle(r.Left, r.Top, r.Right, r.Bottom);
+            gfx.DrawRectangle(brush, rect, 1);
+            gfx.DrawText(font, brush, r.Left, r.Top - 14, label);
+        }
+
         public void DrawSpells(GfxGraphics gfx)
         {
             if (_font == null)

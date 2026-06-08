@@ -8,6 +8,7 @@ namespace refactor
         #region Debug
         public static bool DebugEnabled = false;
         public static bool apiLogDebugEnable = false;
+        public static bool DebugDrawEnabled = false; // F2: draws all pixel detection areas on screen
         #endregion
 
         #region Orbwalker
