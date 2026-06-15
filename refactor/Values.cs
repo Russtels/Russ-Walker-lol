@@ -37,7 +37,7 @@ namespace refactor
             { 2, new Rectangle(1100, 990, 30, 30) },
         };
 
-        public static readonly Color[] StunPattern     = { Color.FromArgb(101, 29, 29), Color.FromArgb(98, 26, 27) };
+        public static readonly Color[] StunPattern     = { Color.FromArgb(191, 43, 42), Color.FromArgb(188, 40, 40) };
         public static readonly Color[] CleansePattern  = { Color.FromArgb(77,  194, 162), Color.FromArgb(182, 235, 224) };
         public static readonly Color[] MercurialPattern = { Color.FromArgb(239, 255, 57), Color.FromArgb(189, 210, 47) };
         public static readonly Color[] LastHitPattern  = { Color.FromArgb(219, 226, 231), Color.FromArgb(219, 226, 231) };
@@ -54,7 +54,7 @@ namespace refactor
         public static float Windup { get; private set; } = 15.0f;
 
         private static readonly Dictionary<string, float> ChampionWindups = new Dictionary<string, float>
-        {
+        { 
             {"Akshan", 13.33f},   {"Aphelios", 15.333f}, {"Ashe", 21.93f},      {"Caitlyn", 17.708f},
             {"Corki", 27.00f},    {"Draven", 15.614f},   {"Ezreal", 18.839f},   {"Graves", 0.5f},
             {"Jayce", 9.5f},      {"Jhin", 15.625f},     {"Jinx", 16.875f},     {"Kaisa", 16.108f},
